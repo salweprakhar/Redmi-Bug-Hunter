@@ -39,6 +39,8 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -46,6 +48,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import javax.net.ssl.HttpsURLConnection;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -69,6 +72,9 @@ public class MainActivity extends Activity {
     private TextView workStatusView, workResponseView;
     private Button workSendButton;
     private String workResponse="";
+    private EditText trafficHostInput;
+    private CheckBox trafficPermissionBox;
+    private TextView trafficStatusView, trafficLogView;
     private static final int MAX_REQUEST_BYTES=65536, MAX_RESPONSE_BYTES=262144;
 
     private int dp(float n) { return (int)(n * getResources().getDisplayMetrics().density + .5f); }
@@ -98,7 +104,7 @@ public class MainActivity extends Activity {
         place(root,label("REDMI BUG HUNTER",23,CYAN,true),4);
         place(root,label("Authorized security research toolkit",13,MUTED,false),8);
         LinearLayout navigation=new LinearLayout(this);navigation.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names={"Device","Audit","HTTP","Tools","Learn","Privacy"};
+        String[] names={"Device","Audit","HTTP","Traffic","Tools","Learn","Privacy"};
         navigationButtons=new Button[names.length];
         for(int i=0;i<names.length;i++){
             final int page=i;Button item=button(names[i],i==0?CYAN:Color.rgb(195,216,241));
@@ -107,7 +113,7 @@ public class MainActivity extends Activity {
             item.setOnClickListener(v->showPage(page));
         }
         place(root,navigation,20);
-        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createWorkbenchPage(),createUtilityPage(),createLearningPage(),createPrivacyPage()};
+        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createWorkbenchPage(),createTrafficPage(),createUtilityPage(),createLearningPage(),createPrivacyPage()};
         for(LinearLayout page:pages)place(root,page,18);
         showPage(0);
     }
@@ -242,7 +248,7 @@ public class MainActivity extends Activity {
         long started=System.nanoTime();int redirects=0;
         while(true){
             HttpURLConnection connection=(HttpURLConnection)new URL(address).openConnection();connection.setRequestMethod(method);connection.setConnectTimeout(10000);connection.setReadTimeout(15000);connection.setInstanceFollowRedirects(false);
-            connection.setRequestProperty("User-Agent","RedmiBugHunter/0.3 (authorized-http-workbench)");for(Map.Entry<String,String> header:headers.entrySet())connection.setRequestProperty(header.getKey(),header.getValue());
+            connection.setRequestProperty("User-Agent","RedmiBugHunter/0.6 (authorized-http-workbench)");for(Map.Entry<String,String> header:headers.entrySet())connection.setRequestProperty(header.getKey(),header.getValue());
             byte[] requestBytes=body.getBytes(StandardCharsets.UTF_8);boolean mayHaveBody=!method.equals("GET")&&!method.equals("HEAD")&&!method.equals("OPTIONS");
             if(mayHaveBody&&requestBytes.length>0){connection.setDoOutput(true);try(OutputStream output=connection.getOutputStream()){output.write(requestBytes);}}
             int status;Map<String,List<String>> responseHeaders;byte[] responseBytes;
@@ -305,6 +311,30 @@ public class MainActivity extends Activity {
         place(page,label("JWT inspection only decodes the header and payload. It does not verify the signature or establish that any claim is trustworthy.",12,MUTED,false),13);
         return page;
     }
+    private LinearLayout createTrafficPage(){
+        LinearLayout page=column();place(page,label("Scoped traffic inspector",19,WHITE,true),4);
+        place(page,label("A user-started local CONNECT proxy for authorized HTTPS connection metadata. TLS contents remain encrypted.",12,MUTED,false),8);
+        TextView endpoint=label("PROXY ENDPOINT  ·  127.0.0.1:8080",12,CYAN,true);endpoint.setPadding(dp(13),dp(12),dp(13),dp(12));endpoint.setBackground(background(PANEL,10));place(page,endpoint,14);
+        place(page,label("Authorized host (one exact hostname)",13,WHITE,true),16);trafficHostInput=field("test.example.com");place(page,trafficHostInput,7);
+        trafficPermissionBox=new CheckBox(this);trafficPermissionBox.setText("I own this host or have explicit permission to inspect its traffic.");trafficPermissionBox.setTextColor(WHITE);trafficPermissionBox.setTextSize(13);trafficPermissionBox.setButtonTintList(android.content.res.ColorStateList.valueOf(CYAN));place(page,trafficPermissionBox,12);
+        Button start=button("Start foreground inspector",CYAN);place(page,start,10);start.setOnClickListener(v->startTrafficInspector());
+        Button stop=button("Stop inspector",Color.rgb(195,216,241));place(page,stop,7);stop.setOnClickListener(v->stopTrafficInspector());
+        trafficStatusView=label("Stopped. Configure a test client only after starting the inspector.",12,MUTED,false);place(page,trafficStatusView,12);
+        place(page,infoCard("How to use\n1. Start the inspector with the exact authorized host.\n2. Configure your test browser or app proxy as 127.0.0.1 port 8080.\n3. Generate HTTPS traffic to that host.\n4. Refresh the log below.\n5. Remove the proxy setting and stop the inspector when finished."),13);
+        place(page,label("Connection metadata",17,WHITE,true),18);trafficLogView=label("No captured connection metadata yet.",12,MUTED,false);trafficLogView.setTextIsSelectable(true);trafficLogView.setPadding(dp(14),dp(15),dp(14),dp(15));trafficLogView.setBackground(background(PANEL,12));place(page,trafficLogView,8);
+        Button refresh=button("Refresh connection log",CYAN);place(page,refresh,9);refresh.setOnClickListener(v->refreshTrafficLog());
+        Button clear=button("Clear connection log",Color.rgb(195,216,241));place(page,clear,7);clear.setOnClickListener(v->{TrafficProxyService.clearEvents();refreshTrafficLog();});
+        place(page,label("This stage records hostname, port, byte counts, duration, blocks out-of-scope hosts, and never decrypts TLS. It is not a certificate-pinning bypass.",12,MUTED,false),12);return page;
+    }
+    private void startTrafficInspector(){
+        String host=trafficHostInput.getText().toString().trim().toLowerCase(Locale.ROOT);
+        if(!trafficPermissionBox.isChecked()){trafficStatusView.setText("Confirm authorization before starting capture.");return;}
+        if(!host.matches("[a-z0-9.-]+")||host.startsWith(".")||host.endsWith(".")){trafficStatusView.setText("Enter one exact hostname without https://, a path, wildcard, or trailing dot.");return;}
+        Intent intent=new Intent(this,TrafficProxyService.class);intent.putExtra("authorized_host",host);
+        if(Build.VERSION.SDK_INT>=26)startForegroundService(intent);else startService(intent);trafficStatusView.setText("Starting inspector for "+host+" on 127.0.0.1:8080…");
+    }
+    private void stopTrafficInspector(){stopService(new Intent(this,TrafficProxyService.class));trafficStatusView.setText("Inspector stopped. Remove the proxy setting from the test client.");refreshTrafficLog();}
+    private void refreshTrafficLog(){trafficLogView.setText(TrafficProxyService.eventText());trafficLogView.setTextColor(WHITE);trafficStatusView.setText(TrafficProxyService.isRunning()?"Inspector active on 127.0.0.1:8080.":"Inspector is stopped.");}
     private void runUtility(String operation){
         String input=utilityInput.getText().toString();
         if("clear".equals(operation)){
@@ -400,47 +430,77 @@ public class MainActivity extends Activity {
         }).start();
     }
     private JSONObject audit(String address,String scope)throws Exception {
-        URL url=new URL(address);HttpURLConnection c=(HttpURLConnection)url.openConnection();
+        JSONArray findings=new JSONArray(),addresses=new JSONArray();
+        long dnsStart=System.nanoTime();for(InetAddress item:InetAddress.getAllByName(scope))addresses.put(item.getHostAddress());long dnsMs=(System.nanoTime()-dnsStart)/1000000L;
+        URL url=new URL(address);HttpsURLConnection c=(HttpsURLConnection)url.openConnection();
         c.setRequestMethod("GET");c.setConnectTimeout(8000);c.setReadTimeout(8000);c.setInstanceFollowRedirects(false);
-        c.setRequestProperty("User-Agent","RedmiBugHunter/0.3 (authorized-security-audit)");
-        JSONArray findings=new JSONArray();int status;
+        c.setRequestProperty("User-Agent","RedmiBugHunter/0.6 (authorized-security-audit)");
+        int status;long requestStart=System.nanoTime();Map<String,List<String>> headers;JSONObject tls=new JSONObject(),headerJson=new JSONObject();
         try {
-            status=c.getResponseCode();Map<String,List<String>> headers=c.getHeaderFields();
-            String[][] checks={{"Strict-Transport-Security","HSTS header not observed"},{"Content-Security-Policy","CSP header not observed"},
-                {"X-Content-Type-Options","X-Content-Type-Options header not observed"},{"Referrer-Policy","Referrer-Policy header not observed"}};
-            for(String[] check:checks)if(c.getHeaderField(check[0])==null)issue(findings,"info",check[1],"Review in the application context; absence alone is not a confirmed vulnerability.");
-            String xcto=c.getHeaderField("X-Content-Type-Options");
-            if(xcto!=null&&!"nosniff".equalsIgnoreCase(xcto.trim()))issue(findings,"info","Unexpected X-Content-Type-Options","Expected nosniff.");
-            int cookieNumber=0;
-            for(Map.Entry<String,List<String>> entry:headers.entrySet()){
-                if(entry.getKey()!=null&&entry.getKey().equalsIgnoreCase("Set-Cookie")&&entry.getValue()!=null){
-                    for(String cookie:entry.getValue()){
-                        cookieNumber++;String lower=cookie.toLowerCase(Locale.ROOT);
-                        String name=cookie.split("=",2)[0].trim();
-                        if(!lower.contains("; secure"))issue(findings,"info","Cookie missing Secure","Cookie #"+cookieNumber+" ("+name+") needs contextual review.");
-                        if(!lower.contains("; httponly"))issue(findings,"info","Cookie missing HttpOnly","Cookie #"+cookieNumber+" ("+name+") may intentionally be accessible to scripts.");
-                        if(!lower.contains("; samesite"))issue(findings,"info","Cookie missing SameSite","Cookie #"+cookieNumber+" ("+name+") needs contextual review.");
-                    }
-                }
+            status=c.getResponseCode();long responseMs=(System.nanoTime()-requestStart)/1000000L;headers=c.getHeaderFields();
+            for(Map.Entry<String,List<String>> entry:headers.entrySet())if(entry.getKey()!=null&&entry.getValue()!=null){JSONArray values=new JSONArray();for(String value:entry.getValue())values.put(value);headerJson.put(entry.getKey(),values);}
+            tls.put("cipher_suite",c.getCipherSuite());Certificate[] certificates=c.getServerCertificates();
+            if(certificates.length>0&&certificates[0] instanceof X509Certificate){
+                X509Certificate cert=(X509Certificate)certificates[0];tls.put("subject",cert.getSubjectX500Principal().getName());tls.put("issuer",cert.getIssuerX500Principal().getName());tls.put("serial_hex",cert.getSerialNumber().toString(16));tls.put("signature_algorithm",cert.getSigAlgName());tls.put("public_key_algorithm",cert.getPublicKey().getAlgorithm());tls.put("not_before",isoDate(cert.getNotBefore()));tls.put("not_after",isoDate(cert.getNotAfter()));
             }
+            String[][] checks={{"Strict-Transport-Security","medium","HSTS header not observed","HSTS helps browsers enforce HTTPS on future visits."},{"Content-Security-Policy","medium","CSP header not observed","CSP can reduce the impact of some content-injection vulnerabilities."},{"X-Content-Type-Options","low","X-Content-Type-Options not observed","nosniff reduces MIME-type confusion."},{"Referrer-Policy","low","Referrer-Policy not observed","A policy can reduce unintended URL data disclosure."},{"Permissions-Policy","info","Permissions-Policy not observed","This header can restrict access to browser capabilities."},{"Cross-Origin-Opener-Policy","info","COOP not observed","COOP can provide browsing-context isolation where appropriate."}};
+            for(String[] check:checks)if(c.getHeaderField(check[0])==null)issue(findings,check[1],check[2],check[3]);
+            String xcto=c.getHeaderField("X-Content-Type-Options");if(xcto!=null&&!"nosniff".equalsIgnoreCase(xcto.trim()))issue(findings,"low","Unexpected X-Content-Type-Options value","Observed: "+xcto+". The commonly expected value is nosniff.");
+            String cors=c.getHeaderField("Access-Control-Allow-Origin");String credentials=c.getHeaderField("Access-Control-Allow-Credentials");
+            if("*".equals(cors)&&"true".equalsIgnoreCase(credentials))issue(findings,"medium","Broad CORS response needs review","Wildcard origin was returned with credential support. Browser enforcement and endpoint behavior must be verified manually.");
+            else if("*".equals(cors))issue(findings,"info","Wildcard CORS origin observed","Public cross-origin access may be intentional; review whether the response contains sensitive data.");
+            String cache=c.getHeaderField("Cache-Control");if(cache==null)issue(findings,"info","Cache-Control not observed","Review whether this response can contain sensitive or user-specific content.");
+            int cookieNumber=0;for(Map.Entry<String,List<String>> entry:headers.entrySet())if(entry.getKey()!=null&&entry.getKey().equalsIgnoreCase("Set-Cookie")&&entry.getValue()!=null)for(String cookie:entry.getValue()){
+                cookieNumber++;String lower=cookie.toLowerCase(Locale.ROOT),name=cookie.split("=",2)[0].trim();
+                if(!lower.contains("; secure"))issue(findings,"medium","Cookie missing Secure","Cookie #"+cookieNumber+" ("+name+") may be sent over an unencrypted connection if one becomes available.");
+                if(!lower.contains("; httponly"))issue(findings,"low","Cookie missing HttpOnly","Cookie #"+cookieNumber+" ("+name+") may intentionally require script access; verify its purpose.");
+                if(!lower.contains("; samesite"))issue(findings,"low","Cookie missing SameSite","Cookie #"+cookieNumber+" ("+name+") needs CSRF-context review.");
+            }
+            analyzeAdvancedHeaders(c,headers,findings);
+            InputStream responseStream=status>=400?c.getErrorStream():c.getInputStream();byte[] bodyBytes=readLimited(responseStream,MAX_RESPONSE_BYTES);String bodyText=new String(bodyBytes,StandardCharsets.UTF_8);
+            JSONObject bodyAnalysis=analyzeResponseBody(c.getContentType(),bodyText,findings);bodyAnalysis.put("preview_bytes",bodyBytes.length);bodyAnalysis.put("possibly_truncated",bodyBytes.length==MAX_RESPONSE_BYTES);bodyAnalysis.put("sha256",digestBytes(bodyBytes,"SHA-256"));
+            JSONObject output=new JSONObject();output.put("tool","Redmi Bug Hunter");output.put("version","0.5.0");output.put("timestamp_utc",isoDate(new Date()));output.put("scope_host",scope);output.put("url",address);output.put("resolved_ips",addresses);output.put("dns_time_ms",dnsMs);output.put("response_time_ms",responseMs);output.put("http_status",status);output.put("response_message",c.getResponseMessage());output.put("content_type",c.getContentType());output.put("content_length",c.getContentLengthLong());output.put("redirect_location",c.getHeaderField("Location"));output.put("redirect_followed",false);output.put("tls",tls);output.put("response_headers",headerJson);output.put("body_analysis",bodyAnalysis);output.put("security_posture_score",postureScore(findings));output.put("findings",findings);output.put("notice","The posture score and heuristic findings require manual verification and are not proof of exploitability.");return output;
         }finally{c.disconnect();}
-        JSONObject output=new JSONObject();output.put("tool","Redmi Bug Hunter");output.put("version","0.3.0");
-        SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        output.put("timestamp_utc",format.format(new Date()));output.put("scope_host",scope);output.put("url",address);
-        output.put("http_status",status);output.put("redirect_followed",false);output.put("checks","One HTTPS GET and passive header/cookie review");
-        output.put("findings",findings);output.put("notice","Informational findings are not confirmed vulnerabilities.");return output;
     }
+    private String isoDate(Date date){SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));return format.format(date);}
+    private void analyzeAdvancedHeaders(HttpsURLConnection c,Map<String,List<String>> headers,JSONArray findings)throws Exception{
+        String hsts=c.getHeaderField("Strict-Transport-Security");if(hsts!=null){String lower=hsts.toLowerCase(Locale.ROOT);long maxAge=-1;for(String part:lower.split(";")){String item=part.trim();if(item.startsWith("max-age="))try{maxAge=Long.parseLong(item.substring(8).trim());}catch(Exception ignored){}}
+            if(maxAge<15552000L)issue(findings,"low","HSTS max-age is short or invalid","A long-lived policy is commonly at least 180 days; observed max-age: "+maxAge+" seconds.");if(!lower.contains("includesubdomains"))issue(findings,"info","HSTS excludes subdomains","Review whether all subdomains are HTTPS-ready before enabling includeSubDomains.");}
+        String csp=c.getHeaderField("Content-Security-Policy");if(csp!=null){String lower=csp.toLowerCase(Locale.ROOT);if(lower.contains("'unsafe-inline'"))issue(findings,"low","CSP allows unsafe-inline","Inline script or style allowances can weaken injection defenses; review nonces or hashes.");if(lower.contains("'unsafe-eval'"))issue(findings,"medium","CSP allows unsafe-eval","Dynamic code evaluation can increase the impact of script injection.");if(!lower.contains("object-src"))issue(findings,"info","CSP has no object-src directive","Consider object-src 'none' when plugins are not required.");if(!lower.contains("base-uri"))issue(findings,"info","CSP has no base-uri directive","base-uri can restrict injected base elements.");}
+        String xfo=c.getHeaderField("X-Frame-Options");if(xfo==null&&(csp==null||!csp.toLowerCase(Locale.ROOT).contains("frame-ancestors")))issue(findings,"medium","Framing protection not observed","Neither X-Frame-Options nor CSP frame-ancestors was found; verify clickjacking exposure in context.");
+        String server=c.getHeaderField("Server");if(server!=null&&server.matches(".*[0-9].*"))issue(findings,"info","Server version may be disclosed","Observed Server header: "+server+". Confirm whether this detail is necessary.");
+        String powered=c.getHeaderField("X-Powered-By");if(powered!=null)issue(findings,"info","Technology header disclosed","Observed X-Powered-By: "+powered+".");
+        String location=c.getHeaderField("Location");if(location!=null&&location.trim().toLowerCase(Locale.ROOT).startsWith("http://"))issue(findings,"medium","Redirect downgrades to HTTP","The response redirects from HTTPS to an unencrypted URL.");
+        boolean setsCookie=headerValue(headers,"Set-Cookie")!=null;String cache=c.getHeaderField("Cache-Control");if(setsCookie&&(cache==null||(!cache.toLowerCase(Locale.ROOT).contains("no-store")&&!cache.toLowerCase(Locale.ROOT).contains("private"))))issue(findings,"low","Cookie response may be cacheable","A response setting cookies does not clearly declare no-store or private; assess actual sensitive content and intermediary behavior.");
+        List<String> cookies=null;for(Map.Entry<String,List<String>> entry:headers.entrySet())if(entry.getKey()!=null&&entry.getKey().equalsIgnoreCase("Set-Cookie"))cookies=entry.getValue();
+        if(cookies!=null)for(String cookie:cookies){String lower=cookie.toLowerCase(Locale.ROOT),name=cookie.split("=",2)[0].trim();if(lower.contains("samesite=none")&&!lower.contains("; secure"))issue(findings,"medium","SameSite=None cookie lacks Secure",name+" may be rejected by modern browsers and lacks transport protection.");if(name.startsWith("__Host-")&&(lower.contains("; domain=")||!lower.contains("; path=/")||!lower.contains("; secure")))issue(findings,"medium","Invalid __Host- cookie constraints",name+" does not meet the Secure, Path=/, and no-Domain requirements.");if(name.startsWith("__Secure-")&&!lower.contains("; secure"))issue(findings,"medium","Invalid __Secure- cookie constraint",name+" does not include Secure.");}
+    }
+    private JSONObject analyzeResponseBody(String contentType,String body,JSONArray findings)throws Exception{
+        JSONObject analysis=new JSONObject();String type=contentType==null?"":contentType.toLowerCase(Locale.ROOT),lower=body.toLowerCase(Locale.ROOT);boolean html=type.contains("text/html")||lower.contains("<html");analysis.put("html_detected",html);
+        if(html){boolean password=lower.matches("(?s).*<input[^>]+type\\s*=\\s*['\"]?password.*");boolean mixed=lower.matches("(?s).*(src|href|action)\\s*=\\s*['\"]http://.*");boolean insecureForm=lower.matches("(?s).*<form[^>]+action\\s*=\\s*['\"]http://.*");analysis.put("password_field_detected",password);analysis.put("mixed_http_reference_detected",mixed);analysis.put("insecure_form_action_detected",insecureForm);if(mixed)issue(findings,"medium","HTTP resource referenced by HTTPS page","Passive HTML review found a src, href, or action using http://. Verify whether active mixed content is loaded.");if(insecureForm)issue(findings,"high","Form may submit over HTTP","Passive HTML review found an HTTP form action. Confirm the rendered form and data sensitivity manually.");}
+        return analysis;
+    }
+    private String digestBytes(byte[] input,String algorithm)throws Exception{byte[] bytes=MessageDigest.getInstance(algorithm).digest(input);StringBuilder result=new StringBuilder();for(byte value:bytes)result.append(String.format(Locale.US,"%02x",value&0xff));return result.toString();}
+    private int postureScore(JSONArray findings)throws Exception{int score=100;for(int i=0;i<findings.length();i++){String severity=findings.getJSONObject(i).getString("severity");if("high".equals(severity))score-=20;else if("medium".equals(severity))score-=10;else if("low".equals(severity))score-=4;}return Math.max(0,score);}
     private void issue(JSONArray items,String severity,String title,String detail)throws Exception{
         JSONObject f=new JSONObject();f.put("severity",severity);f.put("title",title);f.put("detail",detail);items.put(f);
     }
     private String pretty(JSONObject result)throws Exception {
         StringBuilder b=new StringBuilder();b.append("Host: ").append(result.getString("scope_host"));
-        b.append("\nHTTP status: ").append(result.getInt("http_status"));
+        b.append("\nURL: ").append(result.getString("url")).append("\nResolved IPs: ").append(result.getJSONArray("resolved_ips").join(", "));
+        b.append("\nHTTP status: ").append(result.getInt("http_status")).append(' ').append(result.optString("response_message",""));
+        b.append("\nDNS time: ").append(result.getLong("dns_time_ms")).append(" ms\nResponse time: ").append(result.getLong("response_time_ms")).append(" ms");
+        b.append("\nContent-Type: ").append(result.optString("content_type","Not reported")).append("\nContent-Length: ").append(result.getLong("content_length")).append("\nHeuristic posture score: ").append(result.getInt("security_posture_score")).append("/100");
+        if(!result.isNull("redirect_location"))b.append("\nRedirect destination: ").append(result.getString("redirect_location")).append("\nRedirect followed: No");
+        JSONObject tls=result.getJSONObject("tls");b.append("\n\nTLS\nCipher suite: ").append(tls.optString("cipher_suite","Not reported"));
+        b.append("\nCertificate subject: ").append(tls.optString("subject","Not reported")).append("\nCertificate issuer: ").append(tls.optString("issuer","Not reported"));
+        b.append("\nValid from: ").append(tls.optString("not_before","Not reported")).append("\nValid until: ").append(tls.optString("not_after","Not reported"));
         JSONArray items=result.getJSONArray("findings");b.append("\nFindings: ").append(items.length());
         for(int i=0;i<items.length();i++){
-            JSONObject f=items.getJSONObject(i);b.append("\n\n• ").append(f.getString("title"));b.append("\n  ").append(f.getString("detail"));
+            JSONObject f=items.getJSONObject(i);b.append("\n\n• [").append(f.getString("severity").toUpperCase(Locale.ROOT)).append("] ").append(f.getString("title"));b.append("\n  ").append(f.getString("detail"));
         }
-        if(items.length()==0)b.append("\n\nNo issues identified by this limited baseline check.");return b.toString();
+        if(items.length()==0)b.append("\n\nNo issues identified by this limited baseline check.");JSONObject body=result.getJSONObject("body_analysis");b.append("\n\nBODY ANALYSIS\nPreview bytes: ").append(body.getInt("preview_bytes")).append("\nSHA-256: ").append(body.getString("sha256")).append("\nHTML detected: ").append(body.getBoolean("html_detected"));if(body.has("password_field_detected"))b.append("\nPassword field detected: ").append(body.getBoolean("password_field_detected")).append("\nMixed HTTP reference detected: ").append(body.getBoolean("mixed_http_reference_detected"));
+        b.append("\n\nRESPONSE HEADERS");JSONObject headers=result.getJSONObject("response_headers");java.util.Iterator<String> names=headers.keys();while(names.hasNext()){String name=names.next();JSONArray values=headers.getJSONArray(name);for(int i=0;i<values.length();i++)b.append('\n').append(name).append(": ").append(values.getString(i));}return b.toString();
     }
     private void share(){
         if(reportJson.isEmpty())return;

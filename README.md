@@ -19,9 +19,10 @@ Open this project's directory as a Gradle project in an Android IDE supporting J
 ## App features and scope
 
 - **Device:** locally displays the Android version, reported security patch, whether a secure screen lock is detected, and whether USB debugging is enabled. It provides a shortcut to Android security settings. Device details are not uploaded.
-- **Web audit:** requires explicit in-app authorization confirmation and an exact scope hostname matching the HTTPS URL, with no custom port. Sends one HTTPS GET, does not follow redirects, and relies on Android's normal TLS certificate validation. Reviews HSTS, CSP, X-Content-Type-Options, Referrer-Policy, and Set-Cookie attributes. Results may be shared as JSON text.
+- **Web audit:** requires explicit authorization and an exact HTTPS hostname. Its deeper passive analysis reports DNS and response timing, TLS certificate/cipher details, complete headers, redirect safety, CSP directive quality, framing defenses, HSTS quality, CORS, caching, cookie scope/prefix rules, technology disclosure, and limited HTML indicators such as mixed content and insecure form actions. Response inspection is capped at 256 KiB and results may be shared as structured JSON.
 - **Offline utilities:** Base64, URL and HTML encode/decode; SHA-256 and SHA-512 hashing; unverified JWT header/payload inspection; Unix timestamp conversion; and UUID generation. Utility input stays on the device.
 - **HTTP workbench:** sends one authorization-gated HTTPS request using GET, POST, PUT, DELETE, HEAD, or OPTIONS. Supports custom headers, bounded request bodies, same-host redirects, and a size-limited response preview.
+- **Scoped traffic inspector:** runs an explicit foreground-only local proxy on `127.0.0.1:8080`. It accepts HTTPS `CONNECT` tunnels only for one exact authorized hostname on ports 443 or 8443, records connection time and byte counts, and leaves TLS payloads encrypted. Test clients must be configured manually and the persistent notification indicates when inspection is active.
 - **Learn:** offline explanations of HTTPS, security headers, cookies, and responsible testing.
 - **Privacy:** shortcuts to this app's Android permission page and Android privacy settings.
 - No exploitation, login attempts, credential collection, bulk crawling, or stealth capabilities.
