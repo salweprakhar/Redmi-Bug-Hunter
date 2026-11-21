@@ -1,6 +1,6 @@
 # Redmi Bug Hunter X — Android v0.1
 
-Native Java Android app, minSdk 26, no root required. HTTPS-only single-request authorized web security baseline auditor.
+Native Java Android app, minSdk 26, no root required. Includes local device-security guidance, an authorization-only HTTPS baseline audit, offline security utilities and lessons, and privacy settings shortcuts.
 
 ## Build the debug APK using only an Android phone and GitHub
 
@@ -16,15 +16,16 @@ Native Java Android app, minSdk 26, no root required. HTTPS-only single-request 
 
 Open this project's directory as a Gradle project in an Android IDE supporting JDK 17, Android Gradle Plugin 8.5.2, Gradle 8.7, Android SDK 35. Build `:app:assembleDebug`.
 
-## App scope and behavior
+## App features and scope
 
-- Requires explicit in-app authorization confirmation.
-- Requires an exact scope hostname matching the HTTPS URL, no custom port.
-- Sends one HTTPS GET (redirects disabled), using Android's normal TLS certificate validation.
-- Reviews HSTS, CSP, X-Content-Type-Options, Referrer-Policy and Set-Cookie attributes.
-- Results may be shared as JSON text from Android's share sheet.
+- **Device:** locally displays the Android version, reported security patch, whether a secure screen lock is detected, and whether USB debugging is enabled. It provides a shortcut to Android security settings. Device details are not uploaded.
+- **Web audit:** requires explicit in-app authorization confirmation and an exact scope hostname matching the HTTPS URL, with no custom port. Sends one HTTPS GET, does not follow redirects, and relies on Android's normal TLS certificate validation. Reviews HSTS, CSP, X-Content-Type-Options, Referrer-Policy, and Set-Cookie attributes. Results may be shared as JSON text.
+- **Offline utilities:** Base64, URL and HTML encode/decode; SHA-256 and SHA-512 hashing; unverified JWT header/payload inspection; Unix timestamp conversion; and UUID generation. Utility input stays on the device.
+- **HTTP workbench:** sends one authorization-gated HTTPS request using GET, POST, PUT, DELETE, HEAD, or OPTIONS. Supports custom headers, bounded request bodies, same-host redirects, and a size-limited response preview.
+- **Learn:** offline explanations of HTTPS, security headers, cookies, and responsible testing.
+- **Privacy:** shortcuts to this app's Android permission page and Android privacy settings.
 - No exploitation, login attempts, credential collection, bulk crawling, or stealth capabilities.
 
 ## Limitations
 
-This is the first Android-native module, not the complete multi-module research suite. The app has not been compiled in the packaging environment because Android SDK tools were unavailable. Use the Actions build to confirm compilation. HTTP response headers do not prove exploitation; verify findings manually.
+The device status is a basic snapshot, not a full security assessment; available settings and labels may vary by Android/MIUI version. HTTP response headers do not prove exploitation; verify audit findings manually. Use the Actions build to confirm compilation.

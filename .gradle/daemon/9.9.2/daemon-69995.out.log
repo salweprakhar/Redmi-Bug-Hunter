@@ -1,0 +1,189 @@
+2026-11-21T13:32:25.271+0530 [DEBUG] [org.gradle.launcher.daemon.bootstrap.DaemonMain] Assuming the daemon was started with following jvm opts: [-Xmx1536m, -Dfile.encoding=UTF-8, -Duser.country=IN, -Duser.language=en, -Duser.variant]
+2026-11-21T13:32:25.319+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface utun3
+2026-11-21T13:32:25.319+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.319+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:ce81:b1c:bd2c:69e%utun3
+2026-11-21T13:32:25.319+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface utun2
+2026-11-21T13:32:25.319+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:25a0:ed27:eec0:340e%utun2
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface utun1
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:e355:a3b8:448f:152c%utun1
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface utun0
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:da9e:756:1382:89b8%utun0
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface llw0
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.320+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:8cb1:3cff:feda:2ed7%llw0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface awdl0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:8cb1:3cff:feda:2ed7%awdl0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface en0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /2401:4900:881f:2781:f4e3:1064:db6a:db2b%en0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /2401:4900:881f:2781:147f:2565:9ecd:e7e1%en0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:4c9:abb4:c0c3:549e%en0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /192.168.1.52
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface lo0
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? true
+2026-11-21T13:32:25.321+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Ignoring remote address on loopback interface /fe80:0:0:0:0:0:0:1%lo0
+2026-11-21T13:32:25.322+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /0:0:0:0:0:0:0:1%lo0
+2026-11-21T13:32:25.322+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /127.0.0.1
+2026-11-21T13:32:25.342+0530 [INFO] [org.gradle.launcher.daemon.server.Daemon] start() called on daemon - DefaultDaemonContext[uid=b5b7a0f9-71a7-414d-afb4-351715447196,javaHome=/opt/homebrew/Cellar/openjdk/27.0.1.1/libexec/openjdk.jdk/Contents/Home,javaVersion=27,javaVendor=Homebrew,daemonRegistryDir=/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon,pid=69995,idleTimeout=120000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx1536m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+2026-11-21T13:32:25.344+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpIncomingConnector] Listening on [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]].
+2026-11-21T13:32:25.350+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] Daemon starting at: Sat Nov 21 13:32:25 IST 2026, with address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:25.350+0530 [INFO] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Advertising the daemon address to the clients: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:25.350+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Advertised daemon context: DefaultDaemonContext[uid=b5b7a0f9-71a7-414d-afb4-351715447196,javaHome=/opt/homebrew/Cellar/openjdk/27.0.1.1/libexec/openjdk.jdk/Contents/Home,javaVersion=27,javaVendor=Homebrew,daemonRegistryDir=/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon,pid=69995,idleTimeout=120000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx1536m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+2026-11-21T13:32:25.350+0530 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Storing daemon address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]], context: DefaultDaemonContext[uid=b5b7a0f9-71a7-414d-afb4-351715447196,javaHome=/opt/homebrew/Cellar/openjdk/27.0.1.1/libexec/openjdk.jdk/Contents/Home,javaVersion=27,javaVendor=Homebrew,daemonRegistryDir=/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon,pid=69995,idleTimeout=120000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx1536m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+2026-11-21T13:32:25.353+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-11-21T13:32:25.355+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-11-21T13:32:25.355+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-11-21T13:32:25.356+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-11-21T13:32:25.356+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-11-21T13:32:25.357+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-11-21T13:32:25.357+0530 [LIFECYCLE] [org.gradle.launcher.daemon.server.Daemon] Daemon server started.
+2026-11-21T13:32:25.361+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] stopOnExpiration() called on daemon
+2026-11-21T13:32:25.361+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] awaitExpiration() called on daemon
+2026-11-21T13:32:25.362+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon is running. Sleeping until state changes.
+2026-11-21T13:32:25.369+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpIncomingConnector] Accepted connection from /127.0.0.1:51597 to /127.0.0.1:51596.
+2026-11-21T13:32:25.377+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 39: received class org.gradle.launcher.daemon.protocol.Build
+2026-11-21T13:32:25.377+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 39: Received non-IO message from client: Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}
+2026-11-21T13:32:25.378+0530 [INFO] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Received command: Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}.
+2026-11-21T13:32:25.378+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Starting executing command: Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android} with connection: socket connection from /127.0.0.1:51596 to /127.0.0.1:51597.
+2026-11-21T13:32:25.378+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Command execution: started DaemonCommandExecution[command = Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}, connection = DefaultDaemonConnection: socket connection from /127.0.0.1:51596 to /127.0.0.1:51597] after 5.833333333333334E-4 minutes of idle
+2026-11-21T13:32:25.378+0530 [INFO] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Marking the daemon as busy, address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:25.378+0530 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Marking busy by address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:25.379+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-11-21T13:32:25.379+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-11-21T13:32:25.380+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-11-21T13:32:25.380+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] resetting idle timer
+2026-11-21T13:32:25.380+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon is running. Sleeping until state changes.
+2026-11-21T13:32:25.380+0530 [INFO] [org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy] Daemon is about to start building Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}. Dispatching build started information...
+2026-11-21T13:32:25.380+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 41: dispatching org.gradle.launcher.daemon.protocol.BuildStarted@15846d90
+2026-11-21T13:32:25.381+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.LogToClient] About to start relaying all logs to the client via the connection.
+2026-11-21T13:32:25.381+0530 [INFO] [org.gradle.launcher.daemon.server.exec.LogToClient] The client will now receive all logging from the daemon (pid: 69995). The daemon log file: /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon/9.9.2/daemon-69995.out.log
+2026-11-21T13:32:25.381+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ApplyClientEnvironmentVariables] Configuring env variables: [PATH, MACH_PORT_RENDEZVOUS_PEER_VALDATION, GIT_PAGER, VSCODE_PID, GH_PAGER, COLORTERM, LOGNAME, PWD, VSCODE_NLS_CONFIG, CODEX_INTERNAL_ORIGINATOR_OVERRIDE, SHELL, CODEX_SANDBOX_NETWORK_DISABLED, VSCODE_CRASH_REPORTER_PROCESS_TYPE, PAGER, NoDefaultCurrentDirectoryInExePath, CODEX_PERMISSION_PROFILE, VSCODE_CODE_CACHE_PATH, TMPDIR, XPC_FLAGS, LC_ALL, VSCODE_NODE_COMPILE_CACHE_ROOT, __CF_USER_TEXT_ENCODING, LC_CTYPE, CODEX_SESSION_ID, SHLVL, MallocNanoZone, VSCODE_HANDLES_UNCAUGHT_ERRORS, JAVA_HOME, RUST_LOG, TERM, LANG, COMMAND_MODE, ELECTRON_RUN_AS_NODE, GRADLE_USER_HOME, CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS, CODEX_THREAD_ID, NO_COLOR, XPC_SERVICE_NAME, CODEX_CI, __CFBundleIdentifier, APPLICATION_INSIGHTS_NO_STATSBEAT, VSCODE_CWD, VSCODE_ESM_ENTRYPOINT, VSCODE_NODE_COMPILE_CACHE_KIND, CODEX_TOOL_CALL_ID, USER, DEBUG, SSH_AUTH_SOCK, OSLogRateLimit, CODEX_VERSION, HOME, VSCODE_IPC_HOOK]
+2026-11-21T13:32:25.383+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.RequestStopIfSingleUsedDaemon] Requesting daemon stop after processing Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}
+2026-11-21T13:32:25.383+0530 [LIFECYCLE] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Daemon will be stopped at the end of the build 
+2026-11-21T13:32:25.383+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Stop as soon as idle requested. The daemon is busy
+2026-11-21T13:32:25.383+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon stop has been requested. Sleeping until state changes.
+2026-11-21T13:32:25.385+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has started executing the build.
+2026-11-21T13:32:25.385+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] Executing build with daemon context: DefaultDaemonContext[uid=b5b7a0f9-71a7-414d-afb4-351715447196,javaHome=/opt/homebrew/Cellar/openjdk/27.0.1.1/libexec/openjdk.jdk/Contents/Home,javaVersion=27,javaVendor=Homebrew,daemonRegistryDir=/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon,pid=69995,idleTimeout=120000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx1536m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/Users/apple/Downloads/RedmiBugHunter-Android/build.gradle' line: 2
+
+* What went wrong:
+Plugin [id: 'com.android.application', version: '8.5.2', apply: false] was not found in any of the following sources:
+
+- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
+- Included Builds (No included builds contain this plugin)
+- Plugin Repositories (could not resolve plugin artifact 'com.android.application:com.android.application.gradle.plugin:8.5.2')
+  Searched in the following repositories:
+    Google
+    MavenRepo
+    Gradle Central Plugin Repository
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+2026-11-21T13:32:26.684+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has finished executing the build.
+2026-11-21T13:32:26.685+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon stop has been requested. Sleeping until state changes.
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Command execution: finished waiting for DaemonCommandExecution[command = Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}, connection = DefaultDaemonConnection: socket connection from /127.0.0.1:51596 to /127.0.0.1:51597]. Result org.gradle.launcher.daemon.server.DaemonStateCoordinator@3d78d643 with state StopRequested
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Command execution: completed DaemonCommandExecution[command = Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}, connection = DefaultDaemonConnection: socket connection from /127.0.0.1:51596 to /127.0.0.1:51597]
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] resetting idle timer
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Marking daemon stopped due to command completed and stop requested. The daemon is not running a build
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon has stopped.
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ReturnResult] Daemon is dispatching the build result: Success[value=org.gradle.launcher.exec.BuildActionResult@48320b84]
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 38: dispatching Success[value=org.gradle.launcher.exec.BuildActionResult@48320b84]
+2026-11-21T13:32:26.686+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] stop() called on daemon
+2026-11-21T13:32:26.687+0530 [INFO] [org.gradle.launcher.daemon.server.Daemon] Stop requested. Daemon is removing its presence from the registry...
+2026-11-21T13:32:26.687+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Removing our presence to clients, eg. removing this address from the registry: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:26.687+0530 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Removing daemon address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:26.688+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-11-21T13:32:26.688+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-11-21T13:32:26.689+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-11-21T13:32:26.689+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Address removed from registry.
+2026-11-21T13:32:26.690+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Finishing executing command: Build{id=857d1946-1c5b-487d-95b2-8d4ecfb323e9, currentDir=/Users/apple/Downloads/RedmiBugHunter-Android}
+2026-11-21T13:32:26.690+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.CleanUpVirtualFileSystemAfterBuild] Cleaning virtual file system after build finished
+2026-11-21T13:32:26.700+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 39: received class org.gradle.launcher.daemon.protocol.CloseInput
+2026-11-21T13:32:26.701+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 39: Received IO message from client: org.gradle.launcher.daemon.protocol.CloseInput@1aacdd65
+2026-11-21T13:32:26.701+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 39: received class org.gradle.launcher.daemon.protocol.Finished
+2026-11-21T13:32:26.701+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 39: Received non-IO message from client: org.gradle.launcher.daemon.protocol.Finished@6184443e
+2026-11-21T13:32:26.701+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Received finished message: org.gradle.launcher.daemon.protocol.Finished@6184443e
+2026-11-21T13:32:26.702+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 38: stopping connection
+2026-11-21T13:32:26.703+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.SocketConnection] Discarding EOFException: java.io.EOFException
+2026-11-21T13:32:26.703+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 39: received null
+2026-11-21T13:32:26.703+0530 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 39: Received end-of-input from client.
+2026-11-21T13:32:26.704+0530 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 38: stopping connection
+2026-11-21T13:32:26.704+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for jars (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/jars-9)
+2026-11-21T13:32:26.704+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on jars (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/jars-9).
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for file content cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/fileContent)
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on file content cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/fileContent).
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.internal.watch.vfs.impl.WatchingVirtualFileSystem] Closing VFS, dropping state
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.internal.watch.registry.impl.DefaultFileWatcherRegistry] Finished listening to file system change events
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache Generated Gradle JARs cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/generated-gradle-jars) was closed 0 times.
+2026-11-21T13:32:26.705+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for artifact cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/modules-2)
+2026-11-21T13:32:26.706+0530 [DEBUG] [org.gradle.cache.internal.btree.BTreePersistentIndexedCache] Closing cache module-metadata.bin (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/modules-2/metadata-2.107/module-metadata.bin)
+2026-11-21T13:32:26.706+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on artifact cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/modules-2).
+2026-11-21T13:32:26.707+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for journal cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/journal-1)
+2026-11-21T13:32:26.707+0530 [DEBUG] [org.gradle.cache.internal.btree.BTreePersistentIndexedCache] Closing cache file-access.bin (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/journal-1/file-access.bin)
+2026-11-21T13:32:26.707+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on journal cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/journal-1).
+2026-11-21T13:32:26.707+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for file hash cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/fileHashes)
+2026-11-21T13:32:26.707+0530 [DEBUG] [org.gradle.cache.internal.btree.BTreePersistentIndexedCache] Closing cache fileHashes.bin (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/fileHashes/fileHashes.bin)
+2026-11-21T13:32:26.708+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on file hash cache (/Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches/9.9.2/fileHashes).
+2026-11-21T13:32:26.709+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches' started
+2026-11-21T13:32:26.712+0530 [DEBUG] [org.gradle.cache.internal.VersionSpecificCacheCleanupAction] Processed version-specific caches at /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches for cleanup in 0.003 secs
+2026-11-21T13:32:26.712+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Deleting unused version-specific caches in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches'
+2026-11-21T13:32:26.712+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/caches' completed
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused Gradle distributions in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/wrapper/dists' started
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Deleting unused Gradle distributions in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/wrapper/dists'
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused Gradle distributions in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/wrapper/dists' completed
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting old daemon log files in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon' started
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.cache.internal.DaemonLogCleanupAction] Processed daemon logs at /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon for cleanup in 0.0 secs
+2026-11-21T13:32:26.714+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Deleting old daemon log files in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon'
+2026-11-21T13:32:26.715+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting old daemon log files in /Users/apple/Downloads/RedmiBugHunter-Android/.gradle/daemon' completed
+2026-11-21T13:32:26.715+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] stop() called on daemon
+2026-11-21T13:32:26.715+0530 [INFO] [org.gradle.launcher.daemon.server.Daemon] Stop requested. Daemon is removing its presence from the registry...
+2026-11-21T13:32:26.715+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Removing our presence to clients, eg. removing this address from the registry: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:26.715+0530 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Removing daemon address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:26.715+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-11-21T13:32:26.716+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-11-21T13:32:26.716+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-11-21T13:32:26.716+0530 [DEBUG] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Address removed from registry.
+2026-11-21T13:32:26.717+0530 [DEBUG] [org.gradle.cache.internal.locklistener.DefaultFileLockContentionHandler] File lock listener thread completed.
+2026-11-21T13:32:26.718+0530 [DEBUG] [java.lang.Runtime] Runtime.exit() called with status: 0
+java.lang.Throwable: Runtime.exit(0)
+	at java.base/java.lang.Shutdown.logRuntimeExit(Shutdown.java:180)
+	at java.base/java.lang.Shutdown.exit(Shutdown.java:161)
+	at java.base/java.lang.Runtime.exit(Runtime.java:177)
+	at java.base/java.lang.System.exit(System.java:1540)
+	at org.gradle.launcher.bootstrap.ProcessCompleter.complete(ProcessCompleter.java:21)
+	at org.gradle.launcher.bootstrap.EntryPoint.run(EntryPoint.java:62)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:583)
+	at org.gradle.launcher.bootstrap.ProcessBootstrap.runNoExit(ProcessBootstrap.java:72)
+	at org.gradle.launcher.bootstrap.ProcessBootstrap.run(ProcessBootstrap.java:39)
+	at org.gradle.launcher.daemon.bootstrap.GradleDaemon.main(GradleDaemon.java:23)
+Daemon vm is shutting down... The daemon has exited normally or was terminated in response to a user interrupt.
+2026-11-21T13:32:26.719+0530 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Removing daemon address: [dd80e1f1-4af0-497c-9d85-8e3f75c5fab9 port:51596, addresses:[localhost/127.0.0.1]]
+2026-11-21T13:32:26.719+0530 [DEBUG] [org.gradle.launcher.daemon.server.Daemon] VM shutdown hook was unable to remove the daemon address from the registry. It will be cleaned up later.
+java.lang.IllegalStateException: Cannot start managing file contention because this handler has been closed.
+	at org.gradle.cache.internal.locklistener.DefaultFileLockContentionHandler.assertNotStopped(DefaultFileLockContentionHandler.java:267)
+	at org.gradle.cache.internal.locklistener.DefaultFileLockContentionHandler.reservePort(DefaultFileLockContentionHandler.java:312)
+	at org.gradle.cache.internal.DefaultFileLockManager.lock(DefaultFileLockManager.java:127)
+	at org.gradle.cache.internal.DefaultFileLockManager.lock(DefaultFileLockManager.java:109)
+	at org.gradle.cache.internal.DefaultFileLockManager.lock(DefaultFileLockManager.java:104)
+	at org.gradle.cache.internal.OnDemandFileAccess.updateFile(OnDemandFileAccess.java:51)
+	at org.gradle.cache.internal.FileBackedObjectHolder.update(FileBackedObjectHolder.java:77)
+	at org.gradle.cache.internal.FileIntegrityViolationSuppressingObjectHolderDecorator.lambda$update$0(FileIntegrityViolationSuppressingObjectHolderDecorator.java:48)
+	at org.gradle.cache.internal.FileIntegrityViolationSuppressingObjectHolderDecorator.doUpdate(FileIntegrityViolationSuppressingObjectHolderDecorator.java:58)
+	at org.gradle.cache.internal.FileIntegrityViolationSuppressingObjectHolderDecorator.update(FileIntegrityViolationSuppressingObjectHolderDecorator.java:48)
+	at org.gradle.launcher.daemon.registry.PersistentDaemonRegistry.remove(PersistentDaemonRegistry.java:133)
+	at org.gradle.launcher.daemon.server.Daemon$1.run(Daemon.java:131)
+	at java.base/java.lang.Thread.run(Thread.java:1527)
