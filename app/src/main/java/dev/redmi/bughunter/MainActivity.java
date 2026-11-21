@@ -103,7 +103,8 @@ public class MainActivity extends Activity {
             try {
                 JSONObject result=audit(url,scope);
                 String json=result.toString(2);
-                runOnUiThread(()->{reportJson=json;reportView.setText(pretty(result));statusView.setText("Finished. No redirect was followed.");runButton.setEnabled(true);shareButton.setEnabled(true);});
+                String formatted=pretty(result);
+                runOnUiThread(()->{reportJson=json;reportView.setText(formatted);statusView.setText("Finished. No redirect was followed.");runButton.setEnabled(true);shareButton.setEnabled(true);});
             }catch(Exception e){runOnUiThread(()->{statusView.setText("Audit failed: "+e.getClass().getSimpleName()+" — "+e.getMessage());runButton.setEnabled(true);});}
         }).start();
     }
