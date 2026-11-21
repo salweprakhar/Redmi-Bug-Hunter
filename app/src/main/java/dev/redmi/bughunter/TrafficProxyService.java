@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.os.Build;
 import android.os.IBinder;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,15 +41,15 @@ public class TrafficProxyService extends Service {
     @Override public void onCreate(){super.onCreate();clients=Executors.newCachedThreadPool();}
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent==null)return START_NOT_STICKY;String scope=intent.getStringExtra("authorized_host");
-        if(scope==null||!scope.matches("[A-Za-z0-9.-]+")||scope.startsWith(".")||scope.endsWith(".")){addEvent("Start rejected: invalid authorized host");stopSelf();return START_NOT_STICKY;}
-        authorizedHost=scope.toLowerCase(Locale.ROOT);startForeground(73,notification());
+        if(!validHostname(scope)){addEvent("Start rejected: invalid authorized host");stopSelf();return START_NOT_STICKY;}
+        String requested=scope.toLowerCase(Locale.ROOT);if(running&&!requested.equals(authorizedHost)){addEvent("Scope change blocked while active; stop the inspector first");return START_NOT_STICKY;}authorizedHost=requested;startForeground(73,notification());
         if(!running){running=true;stopping=false;clients.execute(this::listen);}return START_NOT_STICKY;
     }
     private Notification notification(){
         NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(CHANNEL,"Traffic inspector",NotificationManager.IMPORTANCE_LOW));
+        manager.createNotificationChannel(new NotificationChannel(CHANNEL,"Traffic inspector",NotificationManager.IMPORTANCE_LOW));
         Intent open=new Intent(this,MainActivity.class);PendingIntent pending=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,CHANNEL):new Notification.Builder(this);
+        Notification.Builder builder=new Notification.Builder(this,CHANNEL);
         return builder.setSmallIcon(android.R.drawable.stat_sys_warning).setContentTitle("Traffic inspector active").setContentText("Scope: "+authorizedHost+" · localhost:"+PORT).setContentIntent(pending).setOngoing(true).build();
     }
     private void listen(){
@@ -65,17 +64,19 @@ public class TrafficProxyService extends Service {
             target=parts[1];int colon=target.lastIndexOf(':');if(colon<=0){reject(local,400,"Host and port required");return;}String host=target.substring(0,colon).toLowerCase(Locale.ROOT);int port=Integer.parseInt(target.substring(colon+1));
             if(!host.equals(authorizedHost)){reject(local,403,"Host outside authorized scope");addEvent("Blocked out-of-scope host: "+host);return;}
             if(port!=443&&port!=8443){reject(local,403,"Only TLS ports 443 and 8443 are allowed");addEvent("Blocked port for "+host+": "+port);return;}
-            try(Socket remote=new Socket()){activeSockets.add(remote);remote.connect(new InetSocketAddress(host,port),10000);remote.setSoTimeout(30000);OutputStream localOut=local.getOutputStream();localOut.write("HTTP/1.1 200 Connection Established\r\nProxy-Agent: RedmiBugHunter/0.6\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));localOut.flush();addEvent("TLS tunnel opened: "+host+":"+port);
-                Thread outbound=new Thread(()->pump(input,remote,up),"proxy-up");Thread inbound=new Thread(()->pumpRemote(remote,localOut,down),"proxy-down");outbound.start();inbound.start();outbound.join();try{remote.shutdownOutput();}catch(Exception ignored){}inbound.join();}
+            try(Socket remote=new Socket()){activeSockets.add(remote);remote.connect(new InetSocketAddress(host,port),10000);local.setSoTimeout(0);remote.setSoTimeout(0);OutputStream localOut=local.getOutputStream();localOut.write("HTTP/1.1 200 Connection Established\r\nProxy-Agent: RedmiBugHunter/0.8\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));localOut.flush();addEvent("TLS tunnel opened: "+host+":"+port);
+                Thread outbound=new Thread(()->pumpTunnel(input,remote,up,local,remote),"proxy-up");Thread inbound=new Thread(()->pumpTunnelRemote(remote,localOut,down,local,remote),"proxy-down");outbound.start();inbound.start();outbound.join();inbound.join();}
         }catch(Exception e){addEvent("Tunnel error for "+target+": "+safe(e));}
         finally{activeSockets.removeIf(Socket::isClosed);addEvent("Tunnel closed: "+target+" · up "+up.get()+" B · down "+down.get()+" B · "+(System.currentTimeMillis()-started)+" ms");}
     }
     private byte[] readHeaders(InputStream input,int limit)throws Exception{ByteArrayOutputStream data=new ByteArrayOutputStream();int state=0,value;while(data.size()<limit&&(value=input.read())!=-1){data.write(value);if((state==0||state==2)&&value=='\r')state++;else if((state==1||state==3)&&value=='\n')state++;else state=0;if(state==4)return data.toByteArray();}throw new IllegalArgumentException("Proxy headers too large or incomplete");}
-    private void pump(InputStream input,Socket remote,AtomicLong count){try{OutputStream output=remote.getOutputStream();copy(input,output,count);}catch(Exception ignored){}}
-    private void pumpRemote(Socket remote,OutputStream output,AtomicLong count){try{copy(remote.getInputStream(),output,count);}catch(Exception ignored){}}
+    private void pumpTunnel(InputStream input,Socket remote,AtomicLong count,Socket local,Socket peer){try{OutputStream output=remote.getOutputStream();copy(input,output,count);}catch(Exception ignored){}finally{closePair(local,peer);}}
+    private void pumpTunnelRemote(Socket remote,OutputStream output,AtomicLong count,Socket local,Socket peer){try{copy(remote.getInputStream(),output,count);}catch(Exception ignored){}finally{closePair(local,peer);}}
+    private void closePair(Socket first,Socket second){try{first.close();}catch(Exception ignored){}try{second.close();}catch(Exception ignored){}}
     private void copy(InputStream input,OutputStream output,AtomicLong count)throws Exception{byte[] buffer=new byte[16384];int read;while((read=input.read(buffer))!=-1){output.write(buffer,0,read);output.flush();count.addAndGet(read);}}
     private void reject(Socket socket,int status,String message)throws Exception{byte[] body=message.getBytes(StandardCharsets.UTF_8);String head="HTTP/1.1 "+status+" Error\r\nContent-Type: text/plain\r\nContent-Length: "+body.length+"\r\nConnection: close\r\n\r\n";OutputStream output=socket.getOutputStream();output.write(head.getBytes(StandardCharsets.ISO_8859_1));output.write(body);output.flush();}
     private static String safe(Exception e){String value=e.getMessage();return value==null?e.getClass().getSimpleName():value;}
+    private static boolean validHostname(String host){if(host==null||host.length()>253||host.startsWith(".")||host.endsWith("."))return false;String[] labels=host.split("\\.",-1);for(String item:labels)if(item.isEmpty()||item.length()>63||item.startsWith("-")||item.endsWith("-")||!item.matches("[A-Za-z0-9-]+"))return false;return true;}
     private static void addEvent(String value){SimpleDateFormat format=new SimpleDateFormat("HH:mm:ss",Locale.US);format.setTimeZone(TimeZone.getDefault());synchronized(EVENTS){EVENTS.addFirst(format.format(new Date())+"  "+value);while(EVENTS.size()>100)EVENTS.removeLast();}}
     public static boolean isRunning(){return running;}
     public static String eventText(){synchronized(EVENTS){if(EVENTS.isEmpty())return "No captured connection metadata yet.";StringBuilder text=new StringBuilder();for(String event:EVENTS)text.append(event).append('\n');return text.toString().trim();}}

@@ -1,6 +1,8 @@
 package dev.redmi.bughunter;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.KeyguardManager;
 import android.os.Bundle;
 import android.os.Build;
@@ -11,6 +13,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -52,6 +55,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
+    private static final int NOTIFICATION_PERMISSION_REQUEST=730;
     private static final int BG=Color.rgb(9,16,29), PANEL=Color.rgb(22,34,53), WHITE=Color.rgb(232,240,250);
     private static final int MUTED=Color.rgb(158,177,203), CYAN=Color.rgb(76,203,222), RED=Color.rgb(255,143,143);
     private EditText urlInput, hostInput;
@@ -74,6 +78,23 @@ public class MainActivity extends Activity {
     private EditText trafficHostInput;
     private CheckBox trafficPermissionBox;
     private TextView trafficStatusView, trafficLogView;
+    private EditText terminalInput;
+    private TextView terminalOutput, terminalStatus;
+    private ShellSession shellSession;
+    private final StringBuilder terminalBuffer=new StringBuilder();
+    private FindingsStore findingsStore;
+    private EditText findingTitleInput, findingTargetInput, findingEvidenceInput, findingRemediationInput;
+    private Spinner findingSeverityInput;
+    private TextView findingsStatusView, findingsListView;
+    private EditText reconUrlInput, reconHostInput;
+    private CheckBox reconPermissionBox;
+    private TextView reconStatusView, reconReportView;
+    private Button reconRunButton, reconShareButton;
+    private ReconEngine reconEngine;
+    private String reconReportJson="";
+    private volatile boolean activityDestroyed=false;
+    private int shellGeneration=0;
+    private ScrollView appScroll;
     private static final int MAX_REQUEST_BYTES=65536, MAX_RESPONSE_BYTES=262144;
 
     private int dp(float n) { return (int)(n * getResources().getDisplayMetrics().density + .5f); }
@@ -98,21 +119,26 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
-        ScrollView sc=new ScrollView(this);sc.setFillViewport(true);sc.setBackgroundColor(BG);
+        ScrollView sc=new ScrollView(this);appScroll=sc;sc.setFillViewport(true);sc.setBackgroundColor(BG);
         LinearLayout root=column();root.setPadding(dp(20),dp(30),dp(20),dp(28));sc.addView(root);setContentView(sc);
+        findingsStore=new FindingsStore(this);
         place(root,label("REDMI BUG HUNTER",23,CYAN,true),4);
         place(root,label("Authorized security research toolkit",13,MUTED,false),8);
-        LinearLayout navigation=new LinearLayout(this);navigation.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names={"Device","Audit","HTTP","Traffic","Tools"};
+        LinearLayout navigation=column();
+        String[] names={"Device","Audit","Recon","HTTP","Traffic","Terminal","Findings","Tools"};
         navigationButtons=new Button[names.length];
-        for(int i=0;i<names.length;i++){
-            final int page=i;Button item=button(names[i],i==0?CYAN:Color.rgb(195,216,241));
-            item.setTextSize(11);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,1);
-            if(i>0)params.leftMargin=dp(5);navigation.addView(item,params);navigationButtons[i]=item;
-            item.setOnClickListener(v->showPage(page));
+        for(int rowStart=0;rowStart<names.length;rowStart+=4){
+            LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);
+            if(rowStart>0){LinearLayout.LayoutParams rowParams=new LinearLayout.LayoutParams(-1,-2);rowParams.topMargin=dp(6);navigation.addView(row,rowParams);}else navigation.addView(row);
+            for(int i=rowStart;i<Math.min(rowStart+4,names.length);i++){
+                final int page=i;Button item=button(names[i],i==0?CYAN:Color.rgb(195,216,241));
+                item.setTextSize(11);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,1);
+                if(i>rowStart)params.leftMargin=dp(5);row.addView(item,params);navigationButtons[i]=item;
+                item.setOnClickListener(v->showPage(page));
+            }
         }
         place(root,navigation,20);
-        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createWorkbenchPage(),createTrafficPage(),createUtilityPage()};
+        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createReconPage(),createWorkbenchPage(),createTrafficPage(),createTerminalPage(),createFindingsPage(),createUtilityPage()};
         for(LinearLayout page:pages)place(root,page,18);
         showPage(0);
     }
@@ -198,6 +224,31 @@ public class MainActivity extends Activity {
         place(page,label("Limits: HTTPS only, exact authorized host, standard port, one request at a time, 64 KiB request body, 256 KiB response preview.",12,MUTED,false),12);
         return page;
     }
+    private LinearLayout createReconPage(){
+        LinearLayout page=column();place(page,label("Authorized Recon and Site Map",19,WHITE,true),4);
+        place(page,label("A bounded same-host HTTPS crawler for endpoint inventory and passive evidence collection.",12,MUTED,false),8);
+        TextView limits=label("MAX 10 REQUESTS  ·  DEPTH 2  ·  ≥500 MS DELAY",12,CYAN,true);limits.setPadding(dp(13),dp(12),dp(13),dp(12));limits.setBackground(background(PANEL,10));place(page,limits,13);
+        place(page,label("Starting HTTPS URL",13,WHITE,true),15);reconUrlInput=field("https://authorized.example/");place(page,reconUrlInput,7);
+        place(page,label("Authorized host (exact hostname)",13,WHITE,true),13);reconHostInput=field("authorized.example");place(page,reconHostInput,7);
+        reconPermissionBox=new CheckBox(this);reconPermissionBox.setText("I own this host or have explicit permission to crawl it.");reconPermissionBox.setTextColor(WHITE);reconPermissionBox.setTextSize(13);reconPermissionBox.setButtonTintList(android.content.res.ColorStateList.valueOf(CYAN));place(page,reconPermissionBox,12);
+        reconRunButton=button("Run bounded recon",CYAN);place(page,reconRunButton,10);reconRunButton.setOnClickListener(v->startRecon());Button cancel=button("Cancel recon",Color.rgb(195,216,241));place(page,cancel,7);cancel.setOnClickListener(v->cancelRecon());
+        reconStatusView=label("Ready. Standard discovery checks include robots.txt, security.txt, and sitemap.xml within the same 10-request budget.",12,MUTED,false);place(page,reconStatusView,11);
+        place(page,label("Site map report",17,WHITE,true),18);reconReportView=label("No recon has been run yet.",12,MUTED,false);reconReportView.setTextIsSelectable(true);reconReportView.setPadding(dp(14),dp(15),dp(14),dp(15));reconReportView.setBackground(background(PANEL,12));place(page,reconReportView,8);
+        reconShareButton=button("Share recon JSON",Color.rgb(195,216,241));reconShareButton.setEnabled(false);place(page,reconShareButton,9);reconShareButton.setOnClickListener(v->shareRecon());place(page,label("Only exact-host HTTPS URLs are requested. Cross-host links are excluded and redirects are never followed automatically outside scope.",12,MUTED,false),11);return page;
+    }
+    private void startRecon(){
+        String address=reconUrlInput.getText().toString().trim(),host=reconHostInput.getText().toString().trim();if(!reconPermissionBox.isChecked()){reconStatusView.setText("Confirm authorization before crawling.");return;}
+        reconEngine=new ReconEngine();reconRunButton.setEnabled(false);reconShareButton.setEnabled(false);reconStatusView.setText("Starting bounded recon…");reconReportView.setText("Waiting for the first response…");
+        new Thread(()->{try{JSONObject report=reconEngine.crawl(address,host,(completed,maximum,url)->runOnUiThread(()->{if(!activityDestroyed)reconStatusView.setText("Recon "+completed+"/"+maximum+" · "+url);}));String json=report.toString(2),pretty=prettyRecon(report);runOnUiThread(()->{if(activityDestroyed)return;reconReportJson=json;reconReportView.setText(pretty);reconReportView.setTextColor(WHITE);reconStatusView.setText(report.optBoolean("cancelled")?"Recon cancelled after "+report.optInt("requests_completed")+" request(s).":"Recon finished within configured limits.");reconRunButton.setEnabled(true);reconShareButton.setEnabled(true);});}
+            catch(Exception e){runOnUiThread(()->{if(activityDestroyed)return;reconStatusView.setText("Recon failed: "+safeMessage(e));reconStatusView.setTextColor(RED);reconRunButton.setEnabled(true);});}},"bounded-recon").start();
+    }
+    private void cancelRecon(){if(reconEngine!=null)reconEngine.cancel();reconStatusView.setText("Cancelling recon…");}
+    private String prettyRecon(JSONObject report)throws Exception{
+        StringBuilder text=new StringBuilder();JSONArray pages=report.getJSONArray("pages"),urls=report.getJSONArray("discovered_urls");text.append("Scope: ").append(report.getString("scope_host")).append("\nRequests: ").append(report.getInt("requests_completed")).append('/').append(ReconEngine.MAX_REQUESTS).append("\nDiscovered same-host URLs: ").append(urls.length()).append("\nCancelled: ").append(report.getBoolean("cancelled"));
+        for(int i=0;i<pages.length();i++){JSONObject page=pages.getJSONObject(i);text.append("\n\n• ").append(page.optInt("status",0)).append("  ").append(page.getString("url"));String title=page.optString("title");if(!title.isEmpty())text.append("\n  Title: ").append(title);text.append("\n  Type: ").append(page.optString("content_type","Not reported")).append("\n  Time: ").append(page.optLong("response_time_ms")).append(" ms");if(page.has("links"))text.append("\n  Links: ").append(page.getJSONArray("links").length()).append(" · Forms: ").append(page.getJSONArray("forms").length()).append(" · Scripts: ").append(page.getJSONArray("scripts").length());if(page.has("error"))text.append("\n  Error: ").append(page.getString("error"));}
+        return text.toString();
+    }
+    private void shareRecon(){if(reconReportJson.isEmpty())return;Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("application/json");intent.putExtra(Intent.EXTRA_TEXT,reconReportJson);startActivity(Intent.createChooser(intent,"Share recon report"));}
     private void sendWorkbenchRequest(){
         String address=workUrlInput.getText().toString().trim(),scope=workHostInput.getText().toString().trim().toLowerCase(Locale.ROOT);
         String method=String.valueOf(workMethodInput.getSelectedItem()),body=workBodyInput.getText().toString(),headers=workHeadersInput.getText().toString();
@@ -210,16 +261,17 @@ public class MainActivity extends Activity {
         new Thread(()->{
             try{
                 String result=executeWorkbench(address,scope,method,headers,body,follow);
-                runOnUiThread(()->{workResponse=result;workResponseView.setText(result);workResponseView.setTextColor(WHITE);workStatusView.setText("Request finished.");workSendButton.setEnabled(true);});
-            }catch(Exception e){runOnUiThread(()->{workResponse="";workResponseView.setText("Request failed: "+safeMessage(e));workResponseView.setTextColor(RED);workStatusView.setText("Request failed safely.");workSendButton.setEnabled(true);});}
+                runOnUiThread(()->{if(activityDestroyed)return;workResponse=result;workResponseView.setText(result);workResponseView.setTextColor(WHITE);workStatusView.setText("Request finished.");workSendButton.setEnabled(true);});
+            }catch(Exception e){runOnUiThread(()->{if(activityDestroyed)return;workResponse="";workResponseView.setText("Request failed: "+safeMessage(e));workResponseView.setTextColor(RED);workStatusView.setText("Request failed safely.");workSendButton.setEnabled(true);});}
         }).start();
     }
     private URI validateScopedHttps(String address,String scope){
         URI uri=URI.create(address);
         if(!"https".equalsIgnoreCase(uri.getScheme())||uri.getHost()==null||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getRawFragment()!=null)throw new IllegalArgumentException("Invalid HTTPS URL");
-        if(scope.isEmpty()||scope.endsWith(".")||!uri.getHost().equalsIgnoreCase(scope))throw new IllegalArgumentException("Host is outside scope");
+        if(!validHostname(scope)||!uri.getHost().equalsIgnoreCase(scope))throw new IllegalArgumentException("Host is outside scope");
         return uri;
     }
+    private boolean validHostname(String host){if(host==null||host.length()>253||host.startsWith(".")||host.endsWith("."))return false;String[] labels=host.split("\\.",-1);for(String item:labels)if(item.isEmpty()||item.length()>63||item.startsWith("-")||item.endsWith("-")||!item.matches("[A-Za-z0-9-]+"))return false;return true;}
     private Map<String,String> parseRequestHeaders(String raw){
         Map<String,String> result=new java.util.LinkedHashMap<>();
         if(raw.trim().isEmpty())return result;
@@ -237,7 +289,7 @@ public class MainActivity extends Activity {
         long started=System.nanoTime();int redirects=0;
         while(true){
             HttpURLConnection connection=(HttpURLConnection)new URL(address).openConnection();connection.setRequestMethod(method);connection.setConnectTimeout(10000);connection.setReadTimeout(15000);connection.setInstanceFollowRedirects(false);
-            connection.setRequestProperty("User-Agent","RedmiBugHunter/0.6 (authorized-http-workbench)");for(Map.Entry<String,String> header:headers.entrySet())connection.setRequestProperty(header.getKey(),header.getValue());
+            connection.setRequestProperty("User-Agent","RedmiBugHunter/0.8 (authorized-http-workbench)");for(Map.Entry<String,String> header:headers.entrySet())connection.setRequestProperty(header.getKey(),header.getValue());
             byte[] requestBytes=body.getBytes(StandardCharsets.UTF_8);boolean mayHaveBody=!method.equals("GET")&&!method.equals("HEAD")&&!method.equals("OPTIONS");
             if(mayHaveBody&&requestBytes.length>0){connection.setDoOutput(true);try(OutputStream output=connection.getOutputStream()){output.write(requestBytes);}}
             int status;Map<String,List<String>> responseHeaders;byte[] responseBytes;
@@ -252,8 +304,9 @@ public class MainActivity extends Activity {
             long elapsed=(System.nanoTime()-started)/1000000L;StringBuilder result=new StringBuilder();
             result.append(method).append(' ').append(address).append("\nStatus: ").append(status).append("\nTime: ").append(elapsed).append(" ms\nRedirects followed: ").append(redirects).append("\nResponse preview: ").append(responseBytes.length).append(" bytes");
             if(responseBytes.length==MAX_RESPONSE_BYTES)result.append(" (possibly truncated)");result.append("\n\nRESPONSE HEADERS\n");
-            for(Map.Entry<String,List<String>> header:responseHeaders.entrySet()){String name=header.getKey()==null?"Status-Line":header.getKey();for(String value:header.getValue())result.append(name).append(": ").append(value).append('\n');}
-            result.append("\nRESPONSE BODY\n").append(new String(responseBytes,StandardCharsets.UTF_8));return result.toString();
+            for(Map.Entry<String,List<String>> header:responseHeaders.entrySet()){String name=header.getKey()==null?"Status-Line":header.getKey();for(String value:header.getValue())result.append(name).append(": ").append(redactHeaderValue(name,value)).append('\n');}
+            String responseType=headerValue(responseHeaders,"Content-Type");boolean textual=responseType==null||responseType.toLowerCase(Locale.ROOT).matches(".*(text|json|xml|javascript|x-www-form-urlencoded).*" );
+            result.append("\nRESPONSE BODY\n");if(textual)result.append(new String(responseBytes,StandardCharsets.UTF_8));else result.append("[Binary body omitted from text view]\nSHA-256: ").append(digestBytes(responseBytes,"SHA-256"));return result.toString();
         }
     }
     private byte[] readLimited(InputStream stream,int maximum)throws Exception{
@@ -261,6 +314,12 @@ public class MainActivity extends Activity {
     }
     private boolean isRedirect(int status){return status==301||status==302||status==303||status==307||status==308;}
     private String headerValue(Map<String,List<String>> headers,String wanted){for(Map.Entry<String,List<String>> item:headers.entrySet())if(item.getKey()!=null&&item.getKey().equalsIgnoreCase(wanted)&&item.getValue()!=null&&!item.getValue().isEmpty())return item.getValue().get(0);return null;}
+    private String redactHeaderValue(String name,String value){
+        if(value==null)return "";String lower=name==null?"":name.toLowerCase(Locale.ROOT);
+        if(lower.equals("set-cookie")){int equals=value.indexOf('='),semicolon=value.indexOf(';');String cookieName=equals>0?value.substring(0,equals).trim():"cookie";return cookieName+"=<redacted>"+(semicolon>=0?value.substring(semicolon):"");}
+        if(lower.contains("authorization")||lower.contains("api-key")||lower.contains("auth-token")||lower.equals("authentication-info"))return "<redacted>";
+        return value;
+    }
     private void copyWorkbenchResponse(){
         if(workResponse.isEmpty()){Toast.makeText(this,"There is no response to copy.",Toast.LENGTH_SHORT).show();return;}ClipboardManager clipboard=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clipboard!=null){clipboard.setPrimaryClip(ClipData.newPlainText("HTTP response",workResponse));Toast.makeText(this,"Response copied.",Toast.LENGTH_SHORT).show();}
     }
@@ -300,6 +359,64 @@ public class MainActivity extends Activity {
         place(page,label("JWT inspection only decodes the header and payload. It does not verify the signature or establish that any claim is trustworthy.",12,MUTED,false),13);
         return page;
     }
+    private LinearLayout createFindingsPage(){
+        LinearLayout page=column();place(page,label("Findings and evidence",19,WHITE,true),4);
+        place(page,label("Store manually verified findings locally and export a structured report. Nothing is uploaded automatically.",12,MUTED,false),8);
+        place(page,label("Title",13,WHITE,true),14);findingTitleInput=field("Example: Missing authorization check");place(page,findingTitleInput,7);
+        place(page,label("Severity",13,WHITE,true),13);findingSeverityInput=new Spinner(this);String[] severities={"info","low","medium","high","critical"};ArrayAdapter<String> severityAdapter=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,severities){
+            @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView view=(TextView)super.getView(position,convertView,parent);view.setTextColor(WHITE);view.setPadding(dp(12),dp(12),dp(12),dp(12));return view;}
+            @Override public View getDropDownView(int position,View convertView,android.view.ViewGroup parent){TextView view=(TextView)super.getDropDownView(position,convertView,parent);view.setTextColor(Color.BLACK);view.setPadding(dp(12),dp(12),dp(12),dp(12));return view;}
+        };severityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);findingSeverityInput.setAdapter(severityAdapter);findingSeverityInput.setSelection(2);findingSeverityInput.setBackground(background(PANEL,10));place(page,findingSeverityInput,7);
+        place(page,label("Target",13,WHITE,true),13);findingTargetInput=field("https://authorized.example/path");place(page,findingTargetInput,7);
+        place(page,label("Evidence",13,WHITE,true),13);findingEvidenceInput=field("Steps, request/response excerpts, and impact");findingEvidenceInput.setSingleLine(false);findingEvidenceInput.setMinLines(4);findingEvidenceInput.setGravity(Gravity.TOP);place(page,findingEvidenceInput,7);
+        place(page,label("Suggested remediation",13,WHITE,true),13);findingRemediationInput=field("Recommended server-side fix");findingRemediationInput.setSingleLine(false);findingRemediationInput.setMinLines(3);findingRemediationInput.setGravity(Gravity.TOP);place(page,findingRemediationInput,7);
+        Button save=button("Save verified finding",CYAN);place(page,save,10);save.setOnClickListener(v->saveFinding());findingsStatusView=label("Up to 100 findings are stored in this app's private data.",12,MUTED,false);place(page,findingsStatusView,10);
+        place(page,label("Saved findings",17,WHITE,true),18);findingsListView=label("No findings saved.",12,MUTED,false);findingsListView.setTextIsSelectable(true);findingsListView.setPadding(dp(14),dp(15),dp(14),dp(15));findingsListView.setBackground(background(PANEL,12));place(page,findingsListView,8);
+        Button refresh=button("Refresh findings",CYAN);place(page,refresh,9);refresh.setOnClickListener(v->refreshFindings());Button export=button("Share JSON report",Color.rgb(195,216,241));place(page,export,7);export.setOnClickListener(v->shareFindings());Button deleteNewest=button("Delete newest finding",Color.rgb(195,216,241));place(page,deleteNewest,7);deleteNewest.setOnClickListener(v->deleteNewestFinding());Button clear=button("Clear all findings",RED);place(page,clear,7);clear.setTextColor(BG);clear.setOnClickListener(v->confirmClearFindings());refreshFindings();return page;
+    }
+    private void saveFinding(){
+        try{findingsStore.add(findingTitleInput.getText().toString(),String.valueOf(findingSeverityInput.getSelectedItem()),findingTargetInput.getText().toString(),findingEvidenceInput.getText().toString(),findingRemediationInput.getText().toString(),"open");findingTitleInput.setText("");findingEvidenceInput.setText("");findingRemediationInput.setText("");findingsStatusView.setText("Finding saved locally.");findingsStatusView.setTextColor(CYAN);refreshFindings();}
+        catch(Exception e){findingsStatusView.setText("Could not save: "+safeMessage(e));findingsStatusView.setTextColor(RED);}
+    }
+    private void refreshFindings(){
+        try{JSONArray items=findingsStore.list();if(items.length()==0){findingsListView.setText("No findings saved.");findingsListView.setTextColor(MUTED);return;}StringBuilder text=new StringBuilder();for(int i=0;i<items.length();i++){JSONObject item=items.getJSONObject(i);if(i>0)text.append("\n\n────────────────\n\n");text.append(i+1).append(". [").append(item.optString("severity").toUpperCase(Locale.ROOT)).append("] ").append(item.optString("title")).append("\nTarget: ").append(item.optString("target")).append("\nStatus: ").append(item.optString("status")).append("\nCreated: ").append(item.optString("created_at_utc"));String evidence=item.optString("evidence");if(!evidence.isEmpty())text.append("\nEvidence: ").append(evidence.length()>600?evidence.substring(0,600)+"…":evidence);}findingsListView.setText(text.toString());findingsListView.setTextColor(WHITE);findingsStatusView.setText(items.length()+" finding(s) stored locally.");}
+        catch(Exception e){findingsStatusView.setText("Could not load findings: "+safeMessage(e));findingsStatusView.setTextColor(RED);}
+    }
+    private void shareFindings(){try{String json=findingsStore.exportJson();Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("application/json");intent.putExtra(Intent.EXTRA_TEXT,json);startActivity(Intent.createChooser(intent,"Share findings report"));}catch(Exception e){findingsStatusView.setText("Could not export: "+safeMessage(e));}}
+    private void deleteNewestFinding(){try{JSONArray items=findingsStore.list();if(items.length()==0){findingsStatusView.setText("There is no finding to delete.");return;}findingsStore.delete(items.getJSONObject(0).getString("id"));findingsStatusView.setText("Newest finding deleted.");refreshFindings();}catch(Exception e){findingsStatusView.setText("Could not delete: "+safeMessage(e));}}
+    private void confirmClearFindings(){new AlertDialog.Builder(this).setTitle("Clear all findings?").setMessage("This permanently removes every locally saved finding.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(dialog,which)->{findingsStore.clear();refreshFindings();findingsStatusView.setText("All findings cleared.");}).show();}
+    private LinearLayout createTerminalPage(){
+        LinearLayout page=column();place(page,label("Embedded terminal",19,WHITE,true),4);
+        place(page,label("A persistent Android shell running inside this app's private sandbox. It does not open or depend on Termux.",12,MUTED,false),8);
+        TextView badge=label("PHASE 1  ·  /system/bin/sh  ·  NO ROOT",12,CYAN,true);badge.setPadding(dp(13),dp(12),dp(13),dp(12));badge.setBackground(background(PANEL,10));place(page,badge,13);
+        terminalStatus=label("Shell is stopped.",12,MUTED,false);place(page,terminalStatus,13);
+        terminalOutput=label("Start the shell to begin.",12,WHITE,false);terminalOutput.setTypeface(Typeface.MONOSPACE);terminalOutput.setTextIsSelectable(true);terminalOutput.setPadding(dp(12),dp(12),dp(12),dp(12));terminalOutput.setMinHeight(dp(240));terminalOutput.setBackground(background(Color.rgb(3,8,15),10));place(page,terminalOutput,9);
+        terminalInput=field("Enter a shell command");terminalInput.setTypeface(Typeface.MONOSPACE);place(page,terminalInput,9);
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
+        Button run=button("Run",CYAN),start=button("Start / restart",Color.rgb(195,216,241));LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,-2,1);actions.addView(run,half);LinearLayout.LayoutParams halfGap=new LinearLayout.LayoutParams(0,-2,1);halfGap.leftMargin=dp(7);actions.addView(start,halfGap);place(page,actions,8);
+        run.setOnClickListener(v->runTerminalCommand());start.setOnClickListener(v->confirmStartShellSession());
+        LinearLayout controls=new LinearLayout(this);controls.setOrientation(LinearLayout.HORIZONTAL);Button stop=button("Stop",Color.rgb(195,216,241)),clear=button("Clear output",Color.rgb(195,216,241));controls.addView(stop,new LinearLayout.LayoutParams(0,-2,1));LinearLayout.LayoutParams clearParams=new LinearLayout.LayoutParams(0,-2,1);clearParams.leftMargin=dp(7);controls.addView(clear,clearParams);place(page,controls,7);
+        stop.setOnClickListener(v->stopShellSession());clear.setOnClickListener(v->{terminalBuffer.setLength(0);terminalOutput.setText("");});
+        place(page,infoCard("Available commands depend on the Android system image. Full-screen programs, package managers, root commands, and Termux packages are not included in this phase. The shell can access this app's private files but not another app's private data."),13);return page;
+    }
+    private void confirmStartShellSession(){new AlertDialog.Builder(this).setTitle("Start embedded shell?").setMessage("Shell commands run with this app's identity and can read its private findings or use its network permission. Run only commands you understand and trust.").setNegativeButton("Cancel",null).setPositiveButton("Start",(dialog,which)->startShellSession()).show();}
+    private void startShellSession(){
+        stopShellSession();int generation=++shellGeneration;terminalBuffer.setLength(0);terminalOutput.setText("");
+        shellSession=new ShellSession(getFilesDir(),new ShellSession.Listener(){
+            @Override public void onOutput(String text){runOnUiThread(()->{if(!activityDestroyed&&generation==shellGeneration)appendTerminal(text);});}
+            @Override public void onStopped(String reason){runOnUiThread(()->{if(activityDestroyed||generation!=shellGeneration)return;terminalStatus.setText(reason);terminalStatus.setTextColor(MUTED);});}
+        });
+        try{shellSession.start();terminalStatus.setText("Shell running in "+getFilesDir().getAbsolutePath());terminalStatus.setTextColor(CYAN);appendTerminal("[embedded shell started]\n");}
+        catch(Exception e){terminalStatus.setText("Could not start shell: "+safeMessage(e));terminalStatus.setTextColor(RED);}
+    }
+    private void runTerminalCommand(){
+        String command=terminalInput.getText().toString();if(command.trim().isEmpty())return;if(shellSession==null||!shellSession.isRunning()){terminalStatus.setText("Start the shell and accept the safety notice first.");terminalStatus.setTextColor(RED);return;}
+        try{appendTerminal("$ "+command+"\n");shellSession.execute(command);terminalInput.setText("");}
+        catch(Exception e){appendTerminal("[command failed: "+safeMessage(e)+"]\n");}
+    }
+    private void appendTerminal(String text){terminalBuffer.append(text);if(terminalBuffer.length()>50000)terminalBuffer.delete(0,terminalBuffer.length()-40000);terminalOutput.setText(terminalBuffer.toString());}
+    private void stopShellSession(){shellGeneration++;if(shellSession!=null)shellSession.stop();shellSession=null;if(terminalStatus!=null){terminalStatus.setText("Shell is stopped.");terminalStatus.setTextColor(MUTED);}}
+    @Override protected void onDestroy(){activityDestroyed=true;if(reconEngine!=null)reconEngine.cancel();stopShellSession();super.onDestroy();}
     private LinearLayout createTrafficPage(){
         LinearLayout page=column();place(page,label("Scoped traffic inspector",19,WHITE,true),4);
         place(page,label("A user-started local CONNECT proxy for authorized HTTPS connection metadata. TLS contents remain encrypted.",12,MUTED,false),8);
@@ -318,10 +435,12 @@ public class MainActivity extends Activity {
     private void startTrafficInspector(){
         String host=trafficHostInput.getText().toString().trim().toLowerCase(Locale.ROOT);
         if(!trafficPermissionBox.isChecked()){trafficStatusView.setText("Confirm authorization before starting capture.");return;}
-        if(!host.matches("[a-z0-9.-]+")||host.startsWith(".")||host.endsWith(".")){trafficStatusView.setText("Enter one exact hostname without https://, a path, wildcard, or trailing dot.");return;}
+        if(!validHostname(host)){trafficStatusView.setText("Enter one valid exact hostname without https://, a path, wildcard, or trailing dot.");return;}
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},NOTIFICATION_PERMISSION_REQUEST);trafficStatusView.setText("Allow notifications, then press Start again. Android requires a visible indicator for traffic inspection.");return;}
         Intent intent=new Intent(this,TrafficProxyService.class);intent.putExtra("authorized_host",host);
-        if(Build.VERSION.SDK_INT>=26)startForegroundService(intent);else startService(intent);trafficStatusView.setText("Starting inspector for "+host+" on 127.0.0.1:8080…");
+        startForegroundService(intent);trafficStatusView.setText("Starting inspector for "+host+" on 127.0.0.1:8080…");
     }
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==NOTIFICATION_PERMISSION_REQUEST&&trafficStatusView!=null)trafficStatusView.setText(grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED?"Notification allowed. Press Start to begin inspection.":"Notification permission is required for the visible traffic-inspection service.");}
     private void stopTrafficInspector(){stopService(new Intent(this,TrafficProxyService.class));trafficStatusView.setText("Inspector stopped. Remove the proxy setting from the test client.");refreshTrafficLog();}
     private void refreshTrafficLog(){trafficLogView.setText(TrafficProxyService.eventText());trafficLogView.setTextColor(WHITE);trafficStatusView.setText(TrafficProxyService.isRunning()?"Inspector active on 127.0.0.1:8080.":"Inspector is stopped.");}
     private void runUtility(String operation){
@@ -382,6 +501,7 @@ public class MainActivity extends Activity {
             pages[i].setVisibility(i==selected?View.VISIBLE:View.GONE);
             navigationButtons[i].setBackground(background(i==selected?CYAN:Color.rgb(195,216,241),10));
         }
+        if(appScroll!=null)appScroll.post(()->appScroll.smoothScrollTo(0,0));
     }
     private void openSettings(Intent intent){
         try{startActivity(intent);}
@@ -394,7 +514,7 @@ public class MainActivity extends Activity {
         try {
             uri=URI.create(url);
             if(!"https".equalsIgnoreCase(uri.getScheme())||uri.getHost()==null||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getRawFragment()!=null)throw new IllegalArgumentException();
-            if(!uri.getHost().equalsIgnoreCase(scope) || scope.isEmpty() || scope.endsWith("."))throw new IllegalArgumentException();
+            if(!uri.getHost().equalsIgnoreCase(scope)||!validHostname(scope))throw new IllegalArgumentException();
         }catch(Exception e){statusView.setText("Enter a valid HTTPS URL and its exact authorized hostname (no custom port).");return;}
         runButton.setEnabled(false);shareButton.setEnabled(false);statusView.setText("Running a single HTTPS request…");
         new Thread(()->{
@@ -402,8 +522,8 @@ public class MainActivity extends Activity {
                 JSONObject result=audit(url,scope);
                 String json=result.toString(2);
                 String formatted=pretty(result);
-                runOnUiThread(()->{reportJson=json;reportView.setText(formatted);statusView.setText("Finished. No redirect was followed.");runButton.setEnabled(true);shareButton.setEnabled(true);});
-            }catch(Exception e){runOnUiThread(()->{statusView.setText("Audit failed: "+e.getClass().getSimpleName()+" — "+e.getMessage());runButton.setEnabled(true);});}
+                runOnUiThread(()->{if(activityDestroyed)return;reportJson=json;reportView.setText(formatted);statusView.setText("Finished. No redirect was followed.");runButton.setEnabled(true);shareButton.setEnabled(true);});
+            }catch(Exception e){runOnUiThread(()->{if(activityDestroyed)return;statusView.setText("Audit failed: "+e.getClass().getSimpleName()+" — "+e.getMessage());runButton.setEnabled(true);});}
         }).start();
     }
     private JSONObject audit(String address,String scope)throws Exception {
@@ -411,11 +531,11 @@ public class MainActivity extends Activity {
         long dnsStart=System.nanoTime();for(InetAddress item:InetAddress.getAllByName(scope))addresses.put(item.getHostAddress());long dnsMs=(System.nanoTime()-dnsStart)/1000000L;
         URL url=new URL(address);HttpsURLConnection c=(HttpsURLConnection)url.openConnection();
         c.setRequestMethod("GET");c.setConnectTimeout(8000);c.setReadTimeout(8000);c.setInstanceFollowRedirects(false);
-        c.setRequestProperty("User-Agent","RedmiBugHunter/0.6 (authorized-security-audit)");
+        c.setRequestProperty("User-Agent","RedmiBugHunter/0.8 (authorized-security-audit)");
         int status;long requestStart=System.nanoTime();Map<String,List<String>> headers;JSONObject tls=new JSONObject(),headerJson=new JSONObject();
         try {
             status=c.getResponseCode();long responseMs=(System.nanoTime()-requestStart)/1000000L;headers=c.getHeaderFields();
-            for(Map.Entry<String,List<String>> entry:headers.entrySet())if(entry.getKey()!=null&&entry.getValue()!=null){JSONArray values=new JSONArray();for(String value:entry.getValue())values.put(value);headerJson.put(entry.getKey(),values);}
+            for(Map.Entry<String,List<String>> entry:headers.entrySet())if(entry.getKey()!=null&&entry.getValue()!=null){JSONArray values=new JSONArray();for(String value:entry.getValue())values.put(redactHeaderValue(entry.getKey(),value));headerJson.put(entry.getKey(),values);}
             tls.put("cipher_suite",c.getCipherSuite());Certificate[] certificates=c.getServerCertificates();
             if(certificates.length>0&&certificates[0] instanceof X509Certificate){
                 X509Certificate cert=(X509Certificate)certificates[0];tls.put("subject",cert.getSubjectX500Principal().getName());tls.put("issuer",cert.getIssuerX500Principal().getName());tls.put("serial_hex",cert.getSerialNumber().toString(16));tls.put("signature_algorithm",cert.getSigAlgName());tls.put("public_key_algorithm",cert.getPublicKey().getAlgorithm());tls.put("not_before",isoDate(cert.getNotBefore()));tls.put("not_after",isoDate(cert.getNotAfter()));
@@ -436,7 +556,7 @@ public class MainActivity extends Activity {
             analyzeAdvancedHeaders(c,headers,findings);
             InputStream responseStream=status>=400?c.getErrorStream():c.getInputStream();byte[] bodyBytes=readLimited(responseStream,MAX_RESPONSE_BYTES);String bodyText=new String(bodyBytes,StandardCharsets.UTF_8);
             JSONObject bodyAnalysis=analyzeResponseBody(c.getContentType(),bodyText,findings);bodyAnalysis.put("preview_bytes",bodyBytes.length);bodyAnalysis.put("possibly_truncated",bodyBytes.length==MAX_RESPONSE_BYTES);bodyAnalysis.put("sha256",digestBytes(bodyBytes,"SHA-256"));
-            JSONObject output=new JSONObject();output.put("tool","Redmi Bug Hunter");output.put("version","0.5.0");output.put("timestamp_utc",isoDate(new Date()));output.put("scope_host",scope);output.put("url",address);output.put("resolved_ips",addresses);output.put("dns_time_ms",dnsMs);output.put("response_time_ms",responseMs);output.put("http_status",status);output.put("response_message",c.getResponseMessage());output.put("content_type",c.getContentType());output.put("content_length",c.getContentLengthLong());output.put("redirect_location",c.getHeaderField("Location"));output.put("redirect_followed",false);output.put("tls",tls);output.put("response_headers",headerJson);output.put("body_analysis",bodyAnalysis);output.put("security_posture_score",postureScore(findings));output.put("findings",findings);output.put("notice","The posture score and heuristic findings require manual verification and are not proof of exploitability.");return output;
+            JSONObject output=new JSONObject();output.put("tool","Redmi Bug Hunter");output.put("version","0.8.0");output.put("timestamp_utc",isoDate(new Date()));output.put("scope_host",scope);output.put("url",address);output.put("resolved_ips",addresses);output.put("dns_time_ms",dnsMs);output.put("response_time_ms",responseMs);output.put("http_status",status);output.put("response_message",c.getResponseMessage());output.put("content_type",c.getContentType());output.put("content_length",c.getContentLengthLong());output.put("redirect_location",c.getHeaderField("Location"));output.put("redirect_followed",false);output.put("tls",tls);output.put("response_headers",headerJson);output.put("body_analysis",bodyAnalysis);output.put("security_posture_score",postureScore(findings));output.put("findings",findings);output.put("notice","The posture score and heuristic findings require manual verification and are not proof of exploitability.");return output;
         }finally{c.disconnect();}
     }
     private String isoDate(Date date){SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));return format.format(date);}
