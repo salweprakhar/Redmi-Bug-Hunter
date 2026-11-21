@@ -16,7 +16,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -28,6 +30,8 @@ import android.widget.Toast;
 import android.widget.ArrayAdapter;
 import android.util.Base64;
 import android.text.Html;
+import android.text.InputType;
+import android.text.method.ScrollingMovementMethod;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -82,6 +86,7 @@ public class MainActivity extends Activity {
     private TextView terminalOutput, terminalStatus;
     private ShellSession shellSession;
     private final StringBuilder terminalBuffer=new StringBuilder();
+    private boolean terminalRenderScheduled=false;
     private FindingsStore findingsStore;
     private EditText findingTitleInput, findingTargetInput, findingEvidenceInput, findingRemediationInput;
     private Spinner findingSeverityInput;
@@ -387,35 +392,41 @@ public class MainActivity extends Activity {
     private void confirmClearFindings(){new AlertDialog.Builder(this).setTitle("Clear all findings?").setMessage("This permanently removes every locally saved finding.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(dialog,which)->{findingsStore.clear();refreshFindings();findingsStatusView.setText("All findings cleared.");}).show();}
     private LinearLayout createTerminalPage(){
         LinearLayout page=column();place(page,label("Embedded terminal",19,WHITE,true),4);
-        place(page,label("A persistent Android shell running inside this app's private sandbox. It does not open or depend on Termux.",12,MUTED,false),8);
-        TextView badge=label("PHASE 1  ·  /system/bin/sh  ·  NO ROOT",12,CYAN,true);badge.setPadding(dp(13),dp(12),dp(13),dp(12));badge.setBackground(background(PANEL,10));place(page,badge,13);
-        terminalStatus=label("Shell is stopped.",12,MUTED,false);place(page,terminalStatus,13);
-        terminalOutput=label("Start the shell to begin.",12,WHITE,false);terminalOutput.setTypeface(Typeface.MONOSPACE);terminalOutput.setTextIsSelectable(true);terminalOutput.setPadding(dp(12),dp(12),dp(12),dp(12));terminalOutput.setMinHeight(dp(240));terminalOutput.setBackground(background(Color.rgb(3,8,15),10));place(page,terminalOutput,9);
-        terminalInput=field("Enter a shell command");terminalInput.setTypeface(Typeface.MONOSPACE);place(page,terminalInput,9);
+        place(page,label("Large in-app Android shell · no external Termux · no root",12,MUTED,false),7);
+        int screenDp=(int)(getResources().getDisplayMetrics().heightPixels/getResources().getDisplayMetrics().density),consoleDp=Math.max(420,Math.min(620,screenDp-250));
+        LinearLayout console=column();console.setPadding(dp(12),dp(10),dp(12),dp(10));console.setBackground(background(Color.rgb(2,8,8),12));
+        terminalStatus=label("● STOPPED  ·  /system/bin/sh",11,Color.rgb(255,180,120),true);console.addView(terminalStatus,new LinearLayout.LayoutParams(-1,-2));
+        terminalOutput=label("Redmi Bug Hunter embedded shell\nPress START, accept the safety notice, then enter a command below.\n",13,Color.rgb(158,255,168),false);terminalOutput.setTypeface(Typeface.MONOSPACE);terminalOutput.setTextIsSelectable(true);terminalOutput.setPadding(0,dp(10),0,dp(10));
+        terminalOutput.setGravity(Gravity.TOP|Gravity.START);terminalOutput.setMovementMethod(new ScrollingMovementMethod());
+        LinearLayout.LayoutParams outputParams=new LinearLayout.LayoutParams(-1,0,1);outputParams.topMargin=dp(4);console.addView(terminalOutput,outputParams);
+        terminalInput=field("$ enter command");terminalInput.setTypeface(Typeface.MONOSPACE);terminalInput.setTextColor(Color.rgb(158,255,168));terminalInput.setHintTextColor(Color.rgb(89,145,104));terminalInput.setBackground(background(Color.rgb(9,24,18),6));terminalInput.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS|InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);terminalInput.setImeOptions(EditorInfo.IME_ACTION_SEND);terminalInput.setContentDescription("Terminal command input");terminalInput.setOnEditorActionListener((view,action,event)->{boolean enter=action==EditorInfo.IME_ACTION_SEND||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_ENTER&&event.getAction()==KeyEvent.ACTION_DOWN);if(enter){runTerminalCommand();return true;}return false;});
+        LinearLayout.LayoutParams inputParams=new LinearLayout.LayoutParams(-1,-2);inputParams.topMargin=dp(7);console.addView(terminalInput,inputParams);
+        LinearLayout.LayoutParams consoleParams=new LinearLayout.LayoutParams(-1,dp(consoleDp));consoleParams.topMargin=dp(12);page.addView(console,consoleParams);
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
-        Button run=button("Run",CYAN),start=button("Start / restart",Color.rgb(195,216,241));LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,-2,1);actions.addView(run,half);LinearLayout.LayoutParams halfGap=new LinearLayout.LayoutParams(0,-2,1);halfGap.leftMargin=dp(7);actions.addView(start,halfGap);place(page,actions,8);
+        Button run=button("Run command",CYAN),start=button("Start / restart",Color.rgb(195,216,241));LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,-2,1);actions.addView(run,half);LinearLayout.LayoutParams halfGap=new LinearLayout.LayoutParams(0,-2,1);halfGap.leftMargin=dp(7);actions.addView(start,halfGap);place(page,actions,8);
         run.setOnClickListener(v->runTerminalCommand());start.setOnClickListener(v->confirmStartShellSession());
-        LinearLayout controls=new LinearLayout(this);controls.setOrientation(LinearLayout.HORIZONTAL);Button stop=button("Stop",Color.rgb(195,216,241)),clear=button("Clear output",Color.rgb(195,216,241));controls.addView(stop,new LinearLayout.LayoutParams(0,-2,1));LinearLayout.LayoutParams clearParams=new LinearLayout.LayoutParams(0,-2,1);clearParams.leftMargin=dp(7);controls.addView(clear,clearParams);place(page,controls,7);
-        stop.setOnClickListener(v->stopShellSession());clear.setOnClickListener(v->{terminalBuffer.setLength(0);terminalOutput.setText("");});
-        place(page,infoCard("Available commands depend on the Android system image. Full-screen programs, package managers, root commands, and Termux packages are not included in this phase. The shell can access this app's private files but not another app's private data."),13);return page;
+        LinearLayout controls=new LinearLayout(this);controls.setOrientation(LinearLayout.HORIZONTAL);Button stop=button("Stop",Color.rgb(195,216,241)),copy=button("Copy all",Color.rgb(195,216,241)),clear=button("Clear",Color.rgb(195,216,241));controls.addView(stop,new LinearLayout.LayoutParams(0,-2,1));LinearLayout.LayoutParams copyParams=new LinearLayout.LayoutParams(0,-2,1);copyParams.leftMargin=dp(6);controls.addView(copy,copyParams);LinearLayout.LayoutParams clearParams=new LinearLayout.LayoutParams(0,-2,1);clearParams.leftMargin=dp(6);controls.addView(clear,clearParams);place(page,controls,7);
+        stop.setOnClickListener(v->stopShellSession());copy.setOnClickListener(v->copyTerminalOutput());clear.setOnClickListener(v->{terminalBuffer.setLength(0);appendTerminal("[screen cleared]\n");});
+        place(page,label("Android system commands only in this phase; full-screen PTY programs and Termux packages are not bundled.",11,MUTED,false),10);return page;
     }
     private void confirmStartShellSession(){new AlertDialog.Builder(this).setTitle("Start embedded shell?").setMessage("Shell commands run with this app's identity and can read its private findings or use its network permission. Run only commands you understand and trust.").setNegativeButton("Cancel",null).setPositiveButton("Start",(dialog,which)->startShellSession()).show();}
     private void startShellSession(){
         stopShellSession();int generation=++shellGeneration;terminalBuffer.setLength(0);terminalOutput.setText("");
         shellSession=new ShellSession(getFilesDir(),new ShellSession.Listener(){
             @Override public void onOutput(String text){runOnUiThread(()->{if(!activityDestroyed&&generation==shellGeneration)appendTerminal(text);});}
-            @Override public void onStopped(String reason){runOnUiThread(()->{if(activityDestroyed||generation!=shellGeneration)return;terminalStatus.setText(reason);terminalStatus.setTextColor(MUTED);});}
+            @Override public void onStopped(String reason){runOnUiThread(()->{if(activityDestroyed||generation!=shellGeneration)return;appendTerminal("\n["+reason+"]\n");terminalStatus.setText("● STOPPED  ·  /system/bin/sh");terminalStatus.setTextColor(Color.rgb(255,180,120));});}
         });
-        try{shellSession.start();terminalStatus.setText("Shell running in "+getFilesDir().getAbsolutePath());terminalStatus.setTextColor(CYAN);appendTerminal("[embedded shell started]\n");}
-        catch(Exception e){terminalStatus.setText("Could not start shell: "+safeMessage(e));terminalStatus.setTextColor(RED);}
+        try{shellSession.start();terminalStatus.setText("● RUNNING  ·  /system/bin/sh");terminalStatus.setTextColor(Color.rgb(158,255,168));appendTerminal("Redmi Bug Hunter embedded shell\nWorking directory: "+getFilesDir().getAbsolutePath()+"\n\n");terminalInput.requestFocus();}
+        catch(Exception e){appendTerminal("[could not start shell: "+safeMessage(e)+"]\n");terminalStatus.setText("● START FAILED");terminalStatus.setTextColor(RED);}
     }
     private void runTerminalCommand(){
-        String command=terminalInput.getText().toString();if(command.trim().isEmpty())return;if(shellSession==null||!shellSession.isRunning()){terminalStatus.setText("Start the shell and accept the safety notice first.");terminalStatus.setTextColor(RED);return;}
+        String command=terminalInput.getText().toString();if(command.trim().isEmpty())return;if(shellSession==null||!shellSession.isRunning()){appendTerminal("[start the shell and accept the safety notice first]\n");return;}
         try{appendTerminal("$ "+command+"\n");shellSession.execute(command);terminalInput.setText("");}
         catch(Exception e){appendTerminal("[command failed: "+safeMessage(e)+"]\n");}
     }
-    private void appendTerminal(String text){terminalBuffer.append(text);if(terminalBuffer.length()>50000)terminalBuffer.delete(0,terminalBuffer.length()-40000);terminalOutput.setText(terminalBuffer.toString());}
-    private void stopShellSession(){shellGeneration++;if(shellSession!=null)shellSession.stop();shellSession=null;if(terminalStatus!=null){terminalStatus.setText("Shell is stopped.");terminalStatus.setTextColor(MUTED);}}
+    private void appendTerminal(String text){terminalBuffer.append(text);if(terminalBuffer.length()>50000)terminalBuffer.delete(0,terminalBuffer.length()-40000);if(!terminalRenderScheduled){terminalRenderScheduled=true;terminalOutput.postDelayed(()->{terminalRenderScheduled=false;terminalOutput.setText(terminalBuffer.toString());android.text.Layout layout=terminalOutput.getLayout();if(layout!=null){int amount=layout.getLineTop(terminalOutput.getLineCount())-terminalOutput.getHeight();terminalOutput.scrollTo(0,Math.max(0,amount));}},50);}}
+    private void copyTerminalOutput(){if(terminalBuffer.length()==0){Toast.makeText(this,"Terminal output is empty.",Toast.LENGTH_SHORT).show();return;}ClipboardManager clipboard=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clipboard!=null){clipboard.setPrimaryClip(ClipData.newPlainText("Terminal output",terminalBuffer.toString()));Toast.makeText(this,"Terminal output copied.",Toast.LENGTH_SHORT).show();}}
+    private void stopShellSession(){shellGeneration++;boolean wasRunning=shellSession!=null&&shellSession.isRunning();if(shellSession!=null)shellSession.stop();shellSession=null;if(terminalStatus!=null){terminalStatus.setText("● STOPPED  ·  /system/bin/sh");terminalStatus.setTextColor(Color.rgb(255,180,120));if(wasRunning&&terminalOutput!=null)appendTerminal("\n[shell stopped]\n");}}
     @Override protected void onDestroy(){activityDestroyed=true;if(reconEngine!=null)reconEngine.cancel();stopShellSession();super.onDestroy();}
     private LinearLayout createTrafficPage(){
         LinearLayout page=column();place(page,label("Scoped traffic inspector",19,WHITE,true),4);

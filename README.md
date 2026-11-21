@@ -1,4 +1,4 @@
-# Redmi Bug Hunter X — Android v0.8
+# Redmi Bug Hunter X — Android v0.8.1
 
 Native Java Android app, minSdk 26, no root required. Includes local device-security guidance, an authorization-only HTTPS audit and workbench, scoped traffic inspection, and offline security utilities.
 
@@ -24,7 +24,7 @@ Open this project's directory as a Gradle project in an Android IDE supporting J
 - **Offline utilities:** Base64, URL and HTML encode/decode; SHA-256 and SHA-512 hashing; unverified JWT header/payload inspection; Unix timestamp conversion; and UUID generation. Utility input stays on the device.
 - **HTTP workbench:** sends one authorization-gated HTTPS request using GET, POST, PUT, DELETE, HEAD, or OPTIONS. Supports custom headers, bounded request bodies, same-host redirects, and a size-limited response preview.
 - **Scoped traffic inspector:** runs an explicit foreground-only local proxy on `127.0.0.1:8080`. It accepts HTTPS `CONNECT` tunnels only for one exact authorized hostname on ports 443 or 8443, records connection time and byte counts, and leaves TLS payloads encrypted. Test clients must be configured manually and the persistent notification indicates when inspection is active.
-- **Embedded terminal (phase 1):** provides a persistent `/system/bin/sh` session inside the app sandbox with streamed output and start, stop, restart, and clear controls. It does not depend on the external Termux app. Available commands come from Android; a full Linux userland and package manager are not bundled yet.
+- **Embedded terminal (phase 1):** provides a large screen-height `/system/bin/sh` console inside the app sandbox with streamed output, automatic scrolling, keyboard Enter-to-run, and start, stop, restart, and clear controls. All shell status and errors stay inside the terminal console. It does not depend on the external Termux app.
 - **Findings:** stores up to 100 manually verified findings locally with severity, target, evidence, remediation, status, and JSON report export.
 - No exploitation, login attempts, credential collection, bulk crawling, or stealth capabilities.
 
