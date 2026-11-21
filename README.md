@@ -1,6 +1,6 @@
 # Redmi Bug Hunter X — Android v0.1
 
-Native Java Android app, minSdk 26, no root required. Includes local device-security guidance, an authorization-only HTTPS baseline audit, offline security utilities and lessons, and privacy settings shortcuts.
+Native Java Android app, minSdk 26, no root required. Includes local device-security guidance, an authorization-only HTTPS audit and workbench, scoped traffic inspection, and offline security utilities.
 
 ## Build the debug APK using only an Android phone and GitHub
 
@@ -23,8 +23,6 @@ Open this project's directory as a Gradle project in an Android IDE supporting J
 - **Offline utilities:** Base64, URL and HTML encode/decode; SHA-256 and SHA-512 hashing; unverified JWT header/payload inspection; Unix timestamp conversion; and UUID generation. Utility input stays on the device.
 - **HTTP workbench:** sends one authorization-gated HTTPS request using GET, POST, PUT, DELETE, HEAD, or OPTIONS. Supports custom headers, bounded request bodies, same-host redirects, and a size-limited response preview.
 - **Scoped traffic inspector:** runs an explicit foreground-only local proxy on `127.0.0.1:8080`. It accepts HTTPS `CONNECT` tunnels only for one exact authorized hostname on ports 443 or 8443, records connection time and byte counts, and leaves TLS payloads encrypted. Test clients must be configured manually and the persistent notification indicates when inspection is active.
-- **Learn:** offline explanations of HTTPS, security headers, cookies, and responsible testing.
-- **Privacy:** shortcuts to this app's Android permission page and Android privacy settings.
 - No exploitation, login attempts, credential collection, bulk crawling, or stealth capabilities.
 
 ## Limitations

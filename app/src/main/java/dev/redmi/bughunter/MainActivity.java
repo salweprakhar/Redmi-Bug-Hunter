@@ -11,7 +11,6 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
-import android.net.Uri;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -104,7 +103,7 @@ public class MainActivity extends Activity {
         place(root,label("REDMI BUG HUNTER",23,CYAN,true),4);
         place(root,label("Authorized security research toolkit",13,MUTED,false),8);
         LinearLayout navigation=new LinearLayout(this);navigation.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names={"Device","Audit","HTTP","Traffic","Tools","Learn","Privacy"};
+        String[] names={"Device","Audit","HTTP","Traffic","Tools"};
         navigationButtons=new Button[names.length];
         for(int i=0;i<names.length;i++){
             final int page=i;Button item=button(names[i],i==0?CYAN:Color.rgb(195,216,241));
@@ -113,7 +112,7 @@ public class MainActivity extends Activity {
             item.setOnClickListener(v->showPage(page));
         }
         place(root,navigation,20);
-        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createWorkbenchPage(),createTrafficPage(),createUtilityPage(),createLearningPage(),createPrivacyPage()};
+        pages=new LinearLayout[]{createDevicePage(),createAuditPage(),createWorkbenchPage(),createTrafficPage(),createUtilityPage()};
         for(LinearLayout page:pages)place(root,page,18);
         showPage(0);
     }
@@ -164,16 +163,6 @@ public class MainActivity extends Activity {
         shareButton=button("Share JSON report",Color.rgb(195,216,241));shareButton.setEnabled(false);place(page,shareButton,13);
         place(page,label("Informational checks only; verify findings manually. No brute force, exploit delivery, or credential collection.",12,MUTED,false),16);
         runButton.setOnClickListener(v->scan());shareButton.setOnClickListener(v->share());
-        return page;
-    }
-    private LinearLayout createLearningPage(){
-        LinearLayout page=column();
-        place(page,label("Security basics",19,WHITE,true),4);
-        place(page,label("Offline learning cards. Use these to improve systems you own or are authorized to manage.",12,MUTED,false),8);
-        place(page,infoCard("HTTPS and certificates\nHTTPS encrypts a connection in transit and helps authenticate the server. A valid certificate does not prove that a site is safe or free of vulnerabilities."),14);
-        place(page,infoCard("Security headers\nHeaders such as Content-Security-Policy and X-Content-Type-Options can reduce certain browser risks. Their absence is a prompt for review, not proof of an exploitable flaw."),10);
-        place(page,infoCard("Cookies\nSecure, HttpOnly, and SameSite attributes can reduce exposure in common situations. Review each cookie in its application context; some cookies have different intended uses."),10);
-        place(page,infoCard("Responsible testing\nGet written permission, agree on scope and timing, use test accounts where possible, minimize traffic, stop if unexpected impact occurs, and report findings privately to the owner."),10);
         return page;
     }
     private LinearLayout createWorkbenchPage(){
@@ -384,18 +373,6 @@ public class MainActivity extends Activity {
         if(utilityResult.isEmpty()){Toast.makeText(this,"There is no output to copy.",Toast.LENGTH_SHORT).show();return;}
         ClipboardManager clipboard=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
         if(clipboard!=null){clipboard.setPrimaryClip(ClipData.newPlainText("Redmi Bug Hunter output",utilityResult));Toast.makeText(this,"Output copied.",Toast.LENGTH_SHORT).show();}
-    }
-    private LinearLayout createPrivacyPage(){
-        LinearLayout page=column();
-        place(page,label("Privacy controls",19,WHITE,true),4);
-        place(page,label("Open Android settings to review permissions and privacy controls. This app does not collect device details.",12,MUTED,false),8);
-        Button permissions=button("Review this app's permissions",CYAN);place(page,permissions,14);
-        permissions.setOnClickListener(v->openSettings(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:"+getPackageName()))));
-        Button dashboard=button("Open Android privacy settings",Color.rgb(195,216,241));place(page,dashboard,8);
-        dashboard.setOnClickListener(v->openSettings(new Intent(Settings.ACTION_PRIVACY_SETTINGS)));
-        place(page,infoCard("Review location, camera, microphone, contacts, and nearby-device access for apps that need them. Revoke permissions that are no longer necessary."),15);
-        return page;
     }
     private TextView infoCard(String text){
         TextView card=label(text,13,WHITE,false);card.setPadding(dp(14),dp(14),dp(14),dp(14));card.setBackground(background(PANEL,12));return card;
